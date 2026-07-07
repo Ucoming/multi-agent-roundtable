@@ -256,6 +256,7 @@ export const defaultConfig: RoundtableConfig = {
   discussionMode: 'brainstorming',
   finalOutputType: 'summary',
   theme: 'warm-family',
+  discussionScene: 'cozy-roundtable',
 }
 
 export function createAgentsFromTemplate(

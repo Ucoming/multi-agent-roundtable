@@ -1,5 +1,5 @@
 import { Bot, Clock3, Coins, MessageSquare, Sparkles } from 'lucide-react'
-import { getThemeDefinition } from '../data/themeCatalog'
+import { RoundtableScene } from './RoundtableScene'
 import type {
   AgentProfile,
   CostSummary,
@@ -27,20 +27,12 @@ export function DiscussionView({
   messages,
   summary,
 }: DiscussionViewProps) {
-  const theme = getThemeDefinition(config.theme)
   const agentMap = new Map(agents.map((agent) => [agent.id, agent]))
   const messageMap = new Map(messages.map((message) => [message.id, message]))
 
   return (
     <section className="discussion-panel" aria-label="Discussion transcript">
-      <div className="discussion-hero">
-        <img src={theme.previewUrl} alt="" className="theme-preview" />
-        <div className="discussion-hero-copy">
-          <p className="eyebrow">Live transcript</p>
-          <h2>{theme.label} Roundtable</h2>
-          <p>{theme.description}</p>
-        </div>
-      </div>
+      <RoundtableScene agents={agents} config={config} isRunning={isRunning} messages={messages} />
 
       <div className="metrics-row">
         <Metric icon={<Bot size={16} />} label="Messages" value={String(messages.length)} />

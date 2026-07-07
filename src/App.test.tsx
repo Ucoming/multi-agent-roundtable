@@ -8,12 +8,16 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Theme style'), {
       target: { value: 'tech-vision' },
     })
+    fireEvent.change(screen.getByLabelText('Visual scene'), {
+      target: { value: 'future-lab' },
+    })
 
-    expect(screen.getByText('Tech Vision Roundtable')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Future Lab' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 
     expect(await screen.findByText(/contributions were made/i)).toBeInTheDocument()
+    expect(screen.getByText(/spoke last/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
   })
 })

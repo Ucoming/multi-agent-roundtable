@@ -7,12 +7,14 @@ import {
   RefreshCw,
   Square,
 } from 'lucide-react'
+import { sceneLabels } from '../data/sceneCatalog'
 import {
   finalOutputLabels,
   modeLabels,
   templateLabels,
 } from '../data/templates'
 import type {
+  DiscussionSceneId,
   DiscussionMode,
   FinalOutputType,
   RoundtableConfig,
@@ -37,6 +39,7 @@ interface ControlPanelProps {
 const templateOptions = Object.keys(templateLabels) as RoundtableTemplate[]
 const modeOptions = Object.keys(modeLabels) as DiscussionMode[]
 const outputOptions = Object.keys(finalOutputLabels) as FinalOutputType[]
+const sceneOptions = Object.keys(sceneLabels) as DiscussionSceneId[]
 const speakingOrders: SpeakingOrder[] = ['fixed', 'random', 'moderator']
 
 export function ControlPanel({
@@ -60,6 +63,23 @@ export function ControlPanel({
           <h2>Session setup</h2>
         </div>
       </div>
+
+      <label className="field">
+        <span>Visual scene</span>
+        <select
+          value={config.discussionScene}
+          disabled={isRunning}
+          onChange={(event) =>
+            onConfigChange({ discussionScene: event.target.value as DiscussionSceneId })
+          }
+        >
+          {sceneOptions.map((scene) => (
+            <option value={scene} key={scene}>
+              {sceneLabels[scene]}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="field">
         <span>Question</span>

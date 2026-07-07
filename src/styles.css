@@ -397,33 +397,217 @@ textarea:disabled {
   overflow: hidden;
 }
 
-.discussion-hero {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 16px;
+.roundtable-scene {
   padding: 16px;
   border-bottom: 1px solid var(--border);
   background: var(--panel-bg);
 }
 
-.theme-preview {
-  width: 180px;
-  height: 98px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  object-fit: cover;
+.scene-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
 }
 
-.discussion-hero-copy {
-  align-self: center;
+.scene-heading > div:first-child {
   min-width: 0;
 }
 
-.discussion-hero-copy p:last-child,
+.scene-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.scene-heading p:last-child,
 .empty-state p,
 .summary-card p {
   margin: 8px 0 0;
   color: var(--muted);
+}
+
+.active-speaker-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 140px;
+  max-width: 210px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.active-speaker-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roundtable-stage {
+  position: relative;
+  min-height: 430px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--surface-muted) 72%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-muted) 72%, transparent) 1px, transparent 1px),
+    var(--surface);
+  background-size: 44px 44px;
+}
+
+.room-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 50%, transparent), transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-strong) 44%, transparent), transparent 58%);
+}
+
+.scene-strategy-room .room-backdrop {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 68%, transparent), transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-strong) 70%, transparent), transparent 72%);
+}
+
+.scene-future-lab .room-backdrop {
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 45%),
+    linear-gradient(240deg, color-mix(in srgb, var(--accent-strong) 22%, transparent), transparent 52%);
+}
+
+.table-surface {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: min(46%, 360px);
+  min-width: 210px;
+  aspect-ratio: 1 / 0.66;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 2px solid color-mix(in srgb, var(--accent) 56%, var(--border));
+  border-radius: 999px;
+  color: var(--surface);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-two) 84%, var(--surface)), var(--accent));
+  box-shadow:
+    inset 0 0 0 12px color-mix(in srgb, var(--surface) 15%, transparent),
+    0 18px 38px rgba(0, 0, 0, 0.12);
+}
+
+.table-surface span {
+  margin-top: 34px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.table-surface svg {
+  position: absolute;
+  top: 35%;
+}
+
+.scene-seat {
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  z-index: 2;
+  width: 190px;
+  transform: translate(-50%, -50%);
+}
+
+.scene-agent {
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px 7px 7px;
+  border: 1px solid color-mix(in srgb, var(--seat-accent) 60%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.scene-agent img {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.scene-agent strong,
+.scene-agent span {
+  display: block;
+  max-width: 104px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-agent strong {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.scene-agent span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 740;
+}
+
+.speech-bubble {
+  position: relative;
+  min-height: 58px;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+
+.speech-bubble::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 22px;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: inherit;
+}
+
+.scene-seat.is-speaking {
+  z-index: 3;
+}
+
+.scene-seat.is-speaking .scene-agent,
+.scene-seat.is-speaking .speech-bubble {
+  border-color: var(--seat-accent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--seat-accent) 18%, transparent),
+    0 14px 30px rgba(0, 0, 0, 0.12);
+}
+
+.scene-seat.is-speaking .speech-bubble {
+  background: color-mix(in srgb, var(--seat-accent) 14%, var(--surface));
 }
 
 .metrics-row {
@@ -704,19 +888,56 @@ blockquote span {
     overflow-x: hidden;
   }
 
+  .agent-panel {
+    order: 1;
+  }
+
   .discussion-panel {
     min-height: auto;
     overflow-x: hidden;
+    order: -1;
   }
 
-  .discussion-hero {
-    grid-template-columns: 1fr;
+  .control-panel {
+    order: 2;
   }
 
-  .theme-preview {
+  .scene-heading {
+    flex-direction: column;
+  }
+
+  .active-speaker-chip {
     width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 7;
+    max-width: none;
+  }
+
+  .roundtable-stage {
+    display: grid;
+    gap: 10px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .room-backdrop,
+  .table-surface {
+    display: none;
+  }
+
+  .scene-seat {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    transform: none;
+  }
+
+  .scene-agent {
+    width: 100%;
+  }
+
+  .scene-agent strong,
+  .scene-agent span {
+    max-width: none;
   }
 
   .switch-label span {

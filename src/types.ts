@@ -26,6 +26,8 @@ export type FinalOutputType = 'summary' | 'decision' | 'action-list' | 'report'
 
 export type ThemeId = 'warm-family' | 'work-mode' | 'tech-vision'
 
+export type DiscussionSceneId = 'cozy-roundtable' | 'strategy-room' | 'future-lab'
+
 export interface AgentProfile {
   id: string
   name: string
@@ -47,6 +49,7 @@ export interface RoundtableConfig {
   discussionMode: DiscussionMode
   finalOutputType: FinalOutputType
   theme: ThemeId
+  discussionScene: DiscussionSceneId
 }
 
 export interface DiscussionMessage {

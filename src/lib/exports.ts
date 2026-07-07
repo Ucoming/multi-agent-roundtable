@@ -34,6 +34,7 @@ ${state.config.question}
 - Speaking order: ${state.config.speakingOrder}
 - Final output: ${state.config.finalOutputType}
 - Theme: ${state.config.theme}
+- Visual scene: ${state.config.discussionScene}
 
 ## Agents
 
