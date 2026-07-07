@@ -1,0 +1,88 @@
+import { createAgentsFromTemplate, defaultConfig } from '../data/templates'
+import { createDiscussionPlan, getSpeakingSequence, runRoundtable } from './discussionEngine'
+import { createJsonExport, createMarkdownExport } from './exports'
+import { createMockProvider } from './mockProvider'
+import type { RoundtableTemplate } from '../types'
+
+const templates: RoundtableTemplate[] = [
+  'brainstorming',
+  'debate',
+  'peer-review',
+  'investment-committee',
+]
+
+describe('roundtable templates', () => {
+  it('creates 3 to 5 enabled agents for every template', () => {
+    for (const template of templates) {
+      const agents = createAgentsFromTemplate(template)
+
+      expect(agents.length).toBeGreaterThanOrEqual(3)
+      expect(agents.length).toBeLessThanOrEqual(5)
+      expect(agents.every((agent) => agent.enabled)).toBe(true)
+    }
+  })
+})
+
+describe('speaking order', () => {
+  it('creates valid fixed, random, and moderator sequences', () => {
+    const agents = createAgentsFromTemplate('peer-review')
+    const activeIds = agents.map((agent) => agent.id).sort()
+
+    for (const order of ['fixed', 'random', 'moderator'] as const) {
+      const sequence = getSpeakingSequence(agents, order, 1, defaultConfig.question)
+      expect(sequence.map((agent) => agent.id).sort()).toEqual(activeIds)
+    }
+  })
+
+  it('creates a turn plan for every configured round', () => {
+    const agents = createAgentsFromTemplate('debate')
+    const plan = createDiscussionPlan(agents, { ...defaultConfig, roundCount: 3 })
+
+    expect(plan).toHaveLength(3)
+    expect(plan.every((round) => round.agents.length === agents.length)).toBe(true)
+  })
+})
+
+describe('roundtable run', () => {
+  it('generates a moderator summary after the configured rounds', async () => {
+    const agents = createAgentsFromTemplate('brainstorming')
+    const result = await runRoundtable(
+      { ...defaultConfig, roundCount: 2 },
+      agents,
+      createMockProvider({ chunkDelayMs: 0 }),
+    )
+
+    expect(result.messages).toHaveLength(agents.length * 2)
+    expect(result.summary.content).toContain('Moderator summary')
+    expect(result.costSummary.totalTokens).toBeGreaterThan(0)
+  })
+})
+
+describe('exports', () => {
+  it('includes question, agents, transcript, and summary in Markdown and JSON exports', async () => {
+    const agents = createAgentsFromTemplate('debate')
+    const result = await runRoundtable(
+      { ...defaultConfig, template: 'debate', discussionMode: 'debate', roundCount: 1 },
+      agents,
+      createMockProvider({ chunkDelayMs: 0 }),
+    )
+    const state = {
+      config: { ...defaultConfig, template: 'debate' as const, discussionMode: 'debate' as const },
+      agents,
+      messages: result.messages,
+      summary: result.summary,
+      costSummary: result.costSummary,
+      exportedAt: '2026-07-07T00:00:00.000Z',
+    }
+
+    const markdown = createMarkdownExport(state)
+    const json = createJsonExport(state)
+
+    expect(markdown).toContain('## Question')
+    expect(markdown).toContain(agents[0].name)
+    expect(markdown).toContain(result.messages[0].content)
+    expect(markdown).toContain(result.summary.content)
+    expect(json).toContain(defaultConfig.question)
+    expect(json).toContain(result.summary.content)
+  })
+})

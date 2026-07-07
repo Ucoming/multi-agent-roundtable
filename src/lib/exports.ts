@@ -1,0 +1,120 @@
+import { jsPDF } from 'jspdf'
+import type { RoundtableExportState } from '../types'
+
+export function createMarkdownExport(state: RoundtableExportState) {
+  const enabledAgents = state.agents.filter((agent) => agent.enabled)
+  const agentRows = enabledAgents
+    .map(
+      (agent) =>
+        `| ${agent.name} | ${agent.role} | ${agent.model} | ${agent.temperature} | ${agent.speakingStyle} |`,
+    )
+    .join('\n')
+
+  const transcript = state.messages
+    .map((message) => {
+      const quoteLine = message.quotedMessageId
+        ? `\n> References previous message: ${message.quotedMessageId}\n`
+        : ''
+      return `### Round ${message.round}: ${message.speakerName}\n${quoteLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${message.costEstimate.toFixed(4)}`
+    })
+    .join('\n\n')
+
+  return `# Multi-Agent Roundtable Export
+
+Exported: ${state.exportedAt}
+
+## Question
+
+${state.config.question}
+
+## Configuration
+
+- Template: ${state.config.template}
+- Discussion mode: ${state.config.discussionMode}
+- Rounds: ${state.config.roundCount}
+- Speaking order: ${state.config.speakingOrder}
+- Final output: ${state.config.finalOutputType}
+- Theme: ${state.config.theme}
+
+## Agents
+
+| Name | Role | Model | Temperature | Style |
+| --- | --- | --- | --- | --- |
+${agentRows}
+
+## Transcript
+
+${transcript || 'No transcript generated yet.'}
+
+## Moderator Summary
+
+${state.summary.content || 'No moderator summary generated yet.'}
+
+## Cost Summary
+
+- Total tokens: ${state.costSummary.totalTokens}
+- Estimated cost: $${state.costSummary.totalCost.toFixed(4)}
+`
+}
+
+export function createJsonExport(state: RoundtableExportState) {
+  return JSON.stringify(state, null, 2)
+}
+
+export function downloadMarkdown(state: RoundtableExportState) {
+  downloadTextFile('roundtable-export.md', createMarkdownExport(state), 'text/markdown')
+}
+
+export function downloadJson(state: RoundtableExportState) {
+  downloadTextFile('roundtable-export.json', createJsonExport(state), 'application/json')
+}
+
+export function downloadPdf(state: RoundtableExportState) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+  const margin = 48
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const usableWidth = pageWidth - margin * 2
+  let y = margin
+
+  const write = (text: string, size = 10, gap = 14) => {
+    doc.setFontSize(size)
+    const lines = doc.splitTextToSize(text, usableWidth) as string[]
+    for (const line of lines) {
+      if (y > pageHeight - margin) {
+        doc.addPage()
+        y = margin
+      }
+      doc.text(line, margin, y)
+      y += gap
+    }
+    y += 4
+  }
+
+  write('Multi-Agent Roundtable Export', 18, 22)
+  write(`Question: ${state.config.question}`, 11, 15)
+  write(
+    `Configuration: ${state.config.template}, ${state.config.roundCount} rounds, ${state.config.speakingOrder} order, ${state.config.finalOutputType} output.`,
+  )
+  write(`Cost: ${state.costSummary.totalTokens} tokens, $${state.costSummary.totalCost.toFixed(4)} estimated.`)
+  write('Moderator Summary', 14, 18)
+  write(state.summary.content || 'No moderator summary generated yet.')
+  write('Transcript', 14, 18)
+
+  for (const message of state.messages) {
+    write(`Round ${message.round} - ${message.speakerName} (${message.model})`, 12, 16)
+    write(message.content)
+  }
+
+  doc.save('roundtable-export.pdf')
+}
+
+function downloadTextFile(filename: string, content: string, type: string) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
