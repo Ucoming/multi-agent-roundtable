@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf'
 import type { RoundtableExportState } from '../types'
 
 export function createMarkdownExport(state: RoundtableExportState) {
@@ -69,7 +68,8 @@ export function downloadJson(state: RoundtableExportState) {
   downloadTextFile('roundtable-export.json', createJsonExport(state), 'application/json')
 }
 
-export function downloadPdf(state: RoundtableExportState) {
+export async function downloadPdf(state: RoundtableExportState) {
+  const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const margin = 48
   const pageWidth = doc.internal.pageSize.getWidth()

@@ -267,12 +267,15 @@ export function createAgentsFromTemplate(
     id: `${template}-${index + 1}`,
     enabled: true,
     ...seed,
-    avatarUrl: applyThemeAvatar(seed.avatarUrl, theme),
+    avatarUrl: getThemedAvatarUrl(seed.avatarUrl, theme),
   }))
 }
 
-function applyThemeAvatar(avatarUrl: string, theme: ThemeId) {
-  if (theme === 'warm-family') return avatarUrl
-  const filename = avatarUrl.split('/').at(-1) ?? avatarUrl
+export function getThemedAvatarUrl(avatarUrl: string, theme: ThemeId) {
+  const filename = (avatarUrl.split('/').at(-1) ?? avatarUrl).replace(
+    /^(work-mode-|tech-vision-)/,
+    '',
+  )
+  if (theme === 'warm-family') return `${avatarBase}${filename}`
   return `${avatarBase}${theme}-${filename}`
 }
