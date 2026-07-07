@@ -23,6 +23,19 @@ import type {
 } from './types'
 
 const provider = createMockProvider({ chunkDelayMs: import.meta.env.MODE === 'test' ? 0 : 18 })
+const minAgents = 1
+const maxAgents = 6
+
+const customAgentAvatars = [
+  './assets/avatar-scout.png',
+  './assets/avatar-builder.png',
+  './assets/avatar-advocate.png',
+  './assets/avatar-keeper.png',
+  './assets/avatar-chair.png',
+  './assets/avatar-operator.png',
+]
+
+const customAgentColors = ['#2f9c95', '#d16b4f', '#7b68a8', '#6b8f4e', '#bc7642', '#5f8c57']
 
 export function App() {
   const [config, setConfig] = useState<RoundtableConfig>(defaultConfig)
@@ -77,6 +90,27 @@ export function App() {
     setAgents((current) =>
       current.map((agent) => (agent.id === id ? { ...agent, ...patch } : agent)),
     )
+  }
+
+  function addAgent() {
+    setAgents((current) => {
+      if (current.length >= maxAgents) return current
+      return [...current, createCustomAgent(current.length + 1, config.theme)]
+    })
+  }
+
+  function removeAgent(id: string) {
+    setAgents((current) => {
+      if (current.length <= minAgents) return current
+      return current.filter((agent) => agent.id !== id)
+    })
+  }
+
+  function removeLastAgent() {
+    setAgents((current) => {
+      if (current.length <= minAgents) return current
+      return current.slice(0, -1)
+    })
   }
 
   function regenerateAgents() {
@@ -173,7 +207,12 @@ export function App() {
         <AgentRoster
           agents={agents}
           disabled={isRunning}
+          maxAgents={maxAgents}
+          minAgents={minAgents}
+          onAddAgent={addAgent}
           onAgentChange={updateAgent}
+          onRemoveAgent={removeAgent}
+          onRemoveLastAgent={removeLastAgent}
           onResetAgents={regenerateAgents}
         />
         <DiscussionView
@@ -209,5 +248,22 @@ function createBlankSummary(): ModeratorSummary {
     tokenEstimate: 0,
     costEstimate: 0,
     timestamp: new Date().toISOString(),
+  }
+}
+
+function createCustomAgent(index: number, theme: ThemeId): AgentProfile {
+  const avatar = customAgentAvatars[(index - 1) % customAgentAvatars.length]
+  return {
+    id: `custom-agent-${Date.now()}-${index}`,
+    name: `Custom Agent ${index}`,
+    role: 'Adds a new perspective to the table.',
+    systemPrompt:
+      'You contribute a distinct perspective, respond to the prior speaker, and keep the discussion moving toward a usable conclusion.',
+    model: 'GPT-5.5',
+    temperature: 0.55,
+    speakingStyle: 'Pragmatic',
+    enabled: true,
+    avatarUrl: getThemedAvatarUrl(avatar, theme),
+    accentColor: customAgentColors[(index - 1) % customAgentColors.length],
   }
 }

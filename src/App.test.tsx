@@ -14,6 +14,12 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: 'Future Lab' })).toBeInTheDocument()
 
+    fireEvent.click(screen.getByLabelText('Add agent'))
+    expect(screen.getByText(/5 total/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Remove last agent'))
+    expect(screen.getByText(/4 total/i)).toBeInTheDocument()
+
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 
     expect(await screen.findByText(/contributions were made/i)).toBeInTheDocument()

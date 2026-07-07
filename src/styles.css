@@ -286,6 +286,7 @@ textarea:disabled {
 }
 
 .agent-count {
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
   padding: 10px;
@@ -294,6 +295,44 @@ textarea:disabled {
   background: var(--surface-muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.agent-count-label,
+.agent-count-actions,
+.agent-card-actions {
+  display: flex;
+  align-items: center;
+}
+
+.agent-count-label {
+  min-width: 0;
+  gap: 8px;
+}
+
+.agent-count-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-count-actions {
+  gap: 6px;
+}
+
+.agent-count-actions button,
+.mini-icon-button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.agent-card-actions {
+  gap: 8px;
 }
 
 .agent-list {
@@ -457,18 +496,27 @@ textarea:disabled {
   border-radius: 8px;
   overflow: hidden;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--surface-muted) 72%, transparent) 1px, transparent 1px),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-muted) 72%, transparent) 1px, transparent 1px),
-    var(--surface);
-  background-size: 44px 44px;
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-muted) 62%, transparent) 25%, transparent 25%) 0 0 / 34px 34px,
+    linear-gradient(225deg, color-mix(in srgb, var(--surface-muted) 54%, transparent) 25%, transparent 25%) 0 0 / 34px 34px,
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--border) 30%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--surface) 92%, var(--panel-strong));
+  background-size:
+    34px 34px,
+    34px 34px,
+    44px 44px,
+    44px 44px,
+    auto;
 }
 
 .room-backdrop {
   position: absolute;
   inset: 0;
+  z-index: 0;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 50%, transparent), transparent 55%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-strong) 44%, transparent), transparent 58%);
+    radial-gradient(circle at 18% 28%, color-mix(in srgb, var(--accent-soft) 64%, transparent), transparent 24%),
+    radial-gradient(circle at 82% 76%, color-mix(in srgb, var(--accent-two) 20%, transparent), transparent 25%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-strong) 36%, transparent), transparent 62%);
 }
 
 .scene-strategy-room .room-backdrop {
@@ -483,10 +531,136 @@ textarea:disabled {
     linear-gradient(240deg, color-mix(in srgb, var(--accent-strong) 22%, transparent), transparent 52%);
 }
 
+.town-map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.town-road,
+.town-block {
+  position: absolute;
+}
+
+.town-road {
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--surface) 82%, var(--panel-strong)),
+      color-mix(in srgb, var(--surface) 82%, var(--panel-strong)) 18px,
+      color-mix(in srgb, var(--border) 50%, transparent) 18px,
+      color-mix(in srgb, var(--border) 50%, transparent) 22px
+    );
+  opacity: 0.78;
+}
+
+.road-main {
+  left: -8%;
+  top: 47%;
+  width: 116%;
+  height: 42px;
+  transform: rotate(-11deg);
+}
+
+.road-cross {
+  left: 44%;
+  top: -18%;
+  width: 38px;
+  height: 132%;
+  transform: rotate(9deg);
+}
+
+.town-block {
+  width: 54px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 86%, var(--panel-strong));
+  box-shadow:
+    8px 8px 0 color-mix(in srgb, var(--accent-soft) 46%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.town-block::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: -14px;
+  width: 38px;
+  height: 24px;
+  transform: skewX(-22deg);
+  border-radius: 4px 4px 2px 2px;
+  background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+}
+
+.town-block::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  bottom: 7px;
+  width: 9px;
+  height: 13px;
+  border-radius: 3px 3px 0 0;
+  background: color-mix(in srgb, var(--accent-strong) 60%, var(--text));
+  box-shadow: 19px -6px 0 -2px color-mix(in srgb, var(--accent-two) 72%, var(--surface));
+}
+
+.block-library {
+  left: 8%;
+  top: 18%;
+}
+
+.block-cafe {
+  right: 9%;
+  top: 18%;
+}
+
+.block-park {
+  left: 10%;
+  bottom: 14%;
+  width: 64px;
+  background: color-mix(in srgb, var(--accent-two) 28%, var(--surface));
+}
+
+.block-park::before {
+  left: 10px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  transform: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-two) 78%, var(--surface));
+  box-shadow: 24px 4px 0 color-mix(in srgb, var(--accent-two) 64%, var(--surface));
+}
+
+.block-park::after {
+  display: none;
+}
+
+.block-lab {
+  right: 12%;
+  bottom: 13%;
+}
+
+.scene-strategy-room .town-block,
+.scene-strategy-room .town-road {
+  opacity: 0.68;
+}
+
+.scene-future-lab .town-block {
+  box-shadow:
+    8px 8px 0 color-mix(in srgb, var(--accent) 20%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
 .table-surface {
   position: absolute;
   left: 50%;
   top: 52%;
+  z-index: 2;
   width: min(46%, 360px);
   min-width: 210px;
   aspect-ratio: 1 / 0.66;
@@ -497,6 +671,7 @@ textarea:disabled {
   border-radius: 999px;
   color: var(--surface);
   background:
+    radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--surface) 20%, transparent), transparent 34%),
     linear-gradient(145deg, color-mix(in srgb, var(--accent-two) 84%, var(--surface)), var(--accent));
   box-shadow:
     inset 0 0 0 12px color-mix(in srgb, var(--surface) 15%, transparent),
@@ -519,7 +694,7 @@ textarea:disabled {
   position: absolute;
   left: var(--seat-x);
   top: var(--seat-y);
-  z-index: 2;
+  z-index: 4;
   width: 190px;
   transform: translate(-50%, -50%);
 }
@@ -919,6 +1094,7 @@ blockquote span {
   }
 
   .room-backdrop,
+  .town-map,
   .table-surface {
     display: none;
   }

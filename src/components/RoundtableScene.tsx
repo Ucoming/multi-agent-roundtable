@@ -42,6 +42,14 @@ export function RoundtableScene({
 
       <div className="roundtable-stage" aria-label={`${scene.label} with agent speech bubbles`}>
         <div className="room-backdrop" />
+        <div className="town-map" aria-hidden="true">
+          <div className="town-road road-main" />
+          <div className="town-road road-cross" />
+          <div className="town-block block-library" />
+          <div className="town-block block-cafe" />
+          <div className="town-block block-park" />
+          <div className="town-block block-lab" />
+        </div>
         <div className="table-surface">
           <MessageCircle size={24} />
           <span>{activeAgents.length} agents</span>

@@ -1,4 +1,4 @@
-import { RefreshCw, SlidersHorizontal } from 'lucide-react'
+import { Minus, Plus, RefreshCw, SlidersHorizontal, Trash2 } from 'lucide-react'
 import type { AgentProfile, ModelLabel, SpeakingStyle } from '../types'
 
 const modelOptions: ModelLabel[] = ['GPT-5.5', 'Claude', 'DeepSeek', 'Gemini', 'Ollama']
@@ -14,17 +14,29 @@ const styleOptions: SpeakingStyle[] = [
 interface AgentRosterProps {
   agents: AgentProfile[]
   disabled: boolean
+  maxAgents: number
+  minAgents: number
+  onAddAgent(): void
   onAgentChange(id: string, patch: Partial<AgentProfile>): void
+  onRemoveAgent(id: string): void
+  onRemoveLastAgent(): void
   onResetAgents(): void
 }
 
 export function AgentRoster({
   agents,
   disabled,
+  maxAgents,
+  minAgents,
+  onAddAgent,
   onAgentChange,
+  onRemoveAgent,
+  onRemoveLastAgent,
   onResetAgents,
 }: AgentRosterProps) {
   const enabledCount = agents.filter((agent) => agent.enabled).length
+  const canAdd = !disabled && agents.length < maxAgents
+  const canRemove = !disabled && agents.length > minAgents
 
   return (
     <aside className="panel agent-panel" aria-label="Agent roster">
@@ -46,8 +58,32 @@ export function AgentRoster({
       </div>
 
       <div className="agent-count">
-        <SlidersHorizontal size={16} />
-        <span>{enabledCount} enabled</span>
+        <div className="agent-count-label">
+          <SlidersHorizontal size={16} />
+          <span>
+            {agents.length} total · {enabledCount} enabled
+          </span>
+        </div>
+        <div className="agent-count-actions" aria-label="Agent count controls">
+          <button
+            type="button"
+            onClick={onRemoveLastAgent}
+            disabled={!canRemove}
+            title="Remove the last agent"
+            aria-label="Remove last agent"
+          >
+            <Minus size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={onAddAgent}
+            disabled={!canAdd}
+            title="Add a new agent"
+            aria-label="Add agent"
+          >
+            <Plus size={15} />
+          </button>
+        </div>
       </div>
 
       <div className="agent-list">
@@ -55,15 +91,29 @@ export function AgentRoster({
           <article className="agent-card" key={agent.id}>
             <div className="agent-card-top">
               <img src={agent.avatarUrl} alt="" className="agent-avatar" />
-              <label className="switch-label">
-                <input
-                  type="checkbox"
-                  checked={agent.enabled}
-                  disabled={disabled}
-                  onChange={(event) => onAgentChange(agent.id, { enabled: event.target.checked })}
-                />
-                <span>Enabled</span>
-              </label>
+              <div className="agent-card-actions">
+                <label className="switch-label">
+                  <input
+                    type="checkbox"
+                    checked={agent.enabled}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      onAgentChange(agent.id, { enabled: event.target.checked })
+                    }
+                  />
+                  <span>Enabled</span>
+                </label>
+                <button
+                  className="mini-icon-button"
+                  type="button"
+                  onClick={() => onRemoveAgent(agent.id)}
+                  disabled={!canRemove}
+                  title={`Remove ${agent.name}`}
+                  aria-label={`Remove ${agent.name}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
 
             <label className="field">
