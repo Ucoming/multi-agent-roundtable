@@ -250,10 +250,10 @@ textarea:disabled {
 
 .workspace {
   width: 100%;
-  max-width: 1680px;
+  max-width: 1760px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(520px, 1fr) minmax(340px, 390px);
+  grid-template-columns: minmax(250px, 300px) minmax(480px, 1fr) minmax(420px, 480px);
   gap: 16px;
   align-items: start;
 }
@@ -1625,7 +1625,7 @@ blockquote span {
 
 @media (max-width: 1180px) {
   .workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 370px);
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
   }
 
   .conversation-sidebar {
