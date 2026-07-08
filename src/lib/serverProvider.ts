@@ -25,6 +25,8 @@ export function createServerProvider(options: ServerProviderOptions = {}): LlmPr
     streamTurn: (input) => postSse(`${baseUrl}/api/agent-turn`, { provider: 'deepseek', ...input }),
     streamSummary: (input) =>
       postSse(`${baseUrl}/api/moderator-summary`, { provider: 'deepseek', ...input }),
+    streamGuidance: (input) =>
+      postSse(`${baseUrl}/api/needs-guide`, { provider: 'deepseek', ...input }),
   }
 }
 

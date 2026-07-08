@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { createAgentsFromTemplate, defaultConfig } from '../src/data/templates'
 import type { DiscussionBrief, DiscussionMessage } from '../src/types'
-import { buildAgentPrompt, buildModeratorPrompt } from './promptBuilder'
+import { buildAgentPrompt, buildModeratorPrompt, buildNeedsGuidePrompt } from './promptBuilder'
 
 describe('prompt builder', () => {
   it('includes the agent system prompt, user question, table brief, and full transcript', () => {
@@ -14,7 +14,11 @@ describe('prompt builder', () => {
 
     const prompt = buildAgentPrompt({
       agent: agents[2],
-      config: { ...defaultConfig, question: 'Should we launch the product now?' },
+      config: {
+        ...defaultConfig,
+        question: 'Should we launch the product now?',
+        preDiscussionContext: 'The user first clarified their needs.',
+      },
       round: 1,
       turnIndex: 2,
       activeAgents: agents,
@@ -24,6 +28,7 @@ describe('prompt builder', () => {
 
     expect(prompt.system).toContain(agents[2].systemPrompt)
     expect(prompt.user).toContain('Should we launch the product now?')
+    expect(prompt.user).toContain('The user first clarified their needs.')
     expect(prompt.user).toContain('Agent-specific attention filter')
     expect(prompt.user).toContain('Current table brief')
     expect(prompt.user).toContain('Reference points to consider')
@@ -41,7 +46,11 @@ describe('prompt builder', () => {
     const messages = [createMessage(agents[0].id, agents[0].name, 'Prototype the smallest path.')]
 
     const prompt = buildModeratorPrompt({
-      config: { ...defaultConfig, finalOutputType: 'action-list' },
+      config: {
+        ...defaultConfig,
+        finalOutputType: 'action-list',
+        preDiscussionContext: 'Needs summary before the table.',
+      },
       activeAgents: agents,
       messages,
       discussionBrief: createBrief(messages),
@@ -49,12 +58,41 @@ describe('prompt builder', () => {
 
     expect(prompt.system).toContain('moderator')
     expect(prompt.user).toContain('action-list')
+    expect(prompt.user).toContain('Needs summary before the table.')
     expect(prompt.user).toContain('Final table brief')
     expect(prompt.user).toContain('Relevant theory lenses to consider')
     expect(prompt.user).toContain('Theory connection')
     expect(prompt.user).toContain('Prototype the smallest path.')
     expect(prompt.user).toContain('Main disagreement or unresolved tension')
     expect(prompt.user).toContain('Multiple plausible readings or outcomes')
+  })
+
+  it('builds staged needs guide prompts and fixed summary instructions', () => {
+    const storyPrompt = buildNeedsGuidePrompt({
+      config: defaultConfig,
+      stage: 'story',
+      initialQuestion: 'I feel confused about a relationship.',
+      messages: [],
+    })
+    const feelingsPrompt = buildNeedsGuidePrompt({
+      config: defaultConfig,
+      stage: 'feelings-needs',
+      initialQuestion: 'I feel confused about a relationship.',
+      messages: [],
+    })
+    const summaryPrompt = buildNeedsGuidePrompt({
+      config: defaultConfig,
+      stage: 'summary',
+      initialQuestion: 'I feel confused about a relationship.',
+      messages: [],
+    })
+
+    expect(storyPrompt.user).toContain('发生了什么')
+    expect(feelingsPrompt.user).toContain('感受')
+    expect(feelingsPrompt.user).toContain('需要')
+    expect(summaryPrompt.system).toContain('Do not diagnose')
+    expect(summaryPrompt.user).toContain('## 需求总结')
+    expect(summaryPrompt.user).toContain('**圆桌问题：**')
   })
 })
 

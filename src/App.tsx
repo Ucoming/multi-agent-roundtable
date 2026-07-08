@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react'
 import { AgentRoster } from './components/AgentRoster'
 import { ControlPanel } from './components/ControlPanel'
 import { DiscussionView } from './components/DiscussionView'
+import { NeedsGuidePanel } from './components/NeedsGuidePanel'
 import { themeCatalog } from './data/themeCatalog'
 import {
   createAgentFromPreset,
@@ -278,6 +279,18 @@ export function App() {
           onExportMarkdown={() => downloadMarkdown(exportState)}
           onExportJson={() => downloadJson(exportState)}
           onExportPdf={() => downloadPdf(exportState)}
+          needsGuideSlot={
+            <NeedsGuidePanel
+              config={config}
+              disabled={isRunning}
+              provider={provider}
+              onApply={(question, context) => {
+                updateConfig({ question, preDiscussionContext: context })
+                setError('')
+              }}
+              onError={setError}
+            />
+          }
         />
       </div>
     </main>

@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Square,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { sceneLabels } from '../data/sceneCatalog'
 import {
   finalOutputLabels,
@@ -37,6 +38,7 @@ interface ControlPanelProps {
   onExportMarkdown(): void
   onExportJson(): void
   onExportPdf(): void
+  needsGuideSlot?: ReactNode
 }
 
 const templateOptions = Object.keys(templateLabels) as RoundtableTemplate[]
@@ -60,6 +62,7 @@ export function ControlPanel({
   onExportMarkdown,
   onExportJson,
   onExportPdf,
+  needsGuideSlot,
 }: ControlPanelProps) {
   return (
     <aside className="panel control-panel" aria-label="Roundtable controls">
@@ -131,6 +134,7 @@ export function ControlPanel({
           onChange={(event) => onConfigChange({ question: event.target.value })}
         />
       </label>
+      {needsGuideSlot}
 
       <div className="control-grid">
         <label className="field">

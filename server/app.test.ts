@@ -1,7 +1,7 @@
 // @vitest-environment node
 import request from 'supertest'
 import { createAgentsFromTemplate, defaultConfig } from '../src/data/templates'
-import type { DiscussionMessage } from '../src/types'
+import type { DiscussionMessage, GuidanceMessage } from '../src/types'
 import { createApp } from './app'
 import type { ServerConfig } from './env'
 
@@ -38,6 +38,40 @@ describe('Express API', () => {
     expect(response.text).toContain('event: error')
     expect(response.text).toContain('DeepSeek API key is not configured')
     expect(response.text).not.toContain('DEEPSEEK_API_KEY=')
+  })
+
+  it('returns a safe SSE error for needs guide when DEEPSEEK_API_KEY is missing', async () => {
+    const response = await request(createApp(createConfig({ deepseekApiKey: '' })))
+      .post('/api/needs-guide')
+      .send({
+        provider: 'deepseek',
+        config: defaultConfig,
+        stage: 'story',
+        initialQuestion: 'I am not sure what I need.',
+        messages: [] satisfies GuidanceMessage[],
+      })
+      .expect(200)
+
+    expect(response.text).toContain('event: error')
+    expect(response.text).toContain('DeepSeek API key is not configured')
+    expect(response.text).not.toContain('DEEPSEEK_API_KEY=')
+  })
+
+  it('validates needs guide requests safely', async () => {
+    const response = await request(createApp(createConfig({ deepseekApiKey: 'secret-key' })))
+      .post('/api/needs-guide')
+      .send({
+        provider: 'deepseek',
+        config: defaultConfig,
+        stage: 'not-a-stage',
+        initialQuestion: 'I am not sure what I need.',
+        messages: [] satisfies GuidanceMessage[],
+      })
+      .expect(200)
+
+    expect(response.text).toContain('event: error')
+    expect(response.text).toContain('Missing or invalid guidance stage')
+    expect(response.text).not.toContain('secret-key')
   })
 })
 

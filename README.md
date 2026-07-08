@@ -10,6 +10,7 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Agent fields: name, role, system prompt, model label, temperature, speaking style, and enabled toggle.
 - Templates: Relationship Reflection, Emotional Clarity, Conflict Mediation, Brainstorming, Debate, Peer Review, and Investment Committee.
 - Relationship agent library with preset perspectives such as Empathic Listener, Rational Analyst, NVC Needs Translator, Boundary Coach, Attachment Lens, CBT Reframer, and Repair Planner.
+- Optional pre-roundtable needs clarifier that guides the user through 3 short rounds before turning unclear feelings into a roundtable-ready question and context summary.
 - Live user interjections during a running discussion; later agents receive the added context in the shared transcript.
 - Safe GFM Markdown rendering for agent messages and moderator summaries, including lists, tables, quotes, inline code, and code blocks.
 - Discussion language control for Chinese or English model output.
@@ -87,6 +88,8 @@ The group-chat model is sequential at the API layer: one API call per speaking a
 
 Each live agent prompt now includes a deliberation contract: use Markdown, answer in the selected language, respond to the whole table state, name the prior speakers being addressed, state whether it agrees, disagrees, or partly agrees, and preserve unresolved disagreement when the question has no single correct answer. The moderator synthesis is asked to separate common ground, unresolved tension, multiple plausible outcomes, theory connections, next conversation moves, and safety or boundary notes. Theory connections must explain both fit and limits, and must not be framed as diagnosis or professional treatment advice.
 
+The same provider boundary powers the pre-roundtable needs guide. Mock mode generates deterministic guidance locally. DeepSeek live mode uses `POST /api/needs-guide` with SSE streaming, fixed stages for story, feelings/needs, boundary/request, and a final Markdown needs summary. The final needs summary is stored as `preDiscussionContext`, included in roundtable prompts, and exported with the session.
+
 ## Relationship Reflection Boundary
 
 The relationship and emotional templates are designed for reflection, perspective-taking, and communication planning. They are not therapy, diagnosis, legal advice, or emergency support. If a transcript suggests self-harm, abuse, coercion, or immediate danger, agents are instructed to prioritize real-world safety and recommend trusted human or emergency support.
@@ -115,3 +118,4 @@ The richer relationship agents are built as method-inspired archetypes rather th
 - 2026-07-08: Expanded the default relationship agent design using public relationship frameworks and Chinese internet relationship-advice archetypes, adding more distinctive agents plus a Dating Clarity template and PUA/manipulation risk guardrails.
 - 2026-07-08: Reworked turn routing from latest-message handoff to whole-table discussion briefs, with multi-speaker reference tracking in prompts, UI, exports, and tests.
 - 2026-07-08: Added agent-specific attention filtering and required theory mapping in moderator summaries, so final outputs connect the user's situation to relevant frameworks without turning them into diagnoses.
+- 2026-07-08: Added the pre-roundtable needs clarifier with 3-stage guided chat, mock and DeepSeek SSE providers, context handoff into roundtable prompts, and export support.

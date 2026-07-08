@@ -1,6 +1,8 @@
 import type {
   DiscussionBriefPoint,
+  GuidanceMessage,
   LlmProvider,
+  NeedsGuideInput,
   ProviderSummaryInput,
   ProviderTurnInput,
 } from '../types'
@@ -18,6 +20,7 @@ export function createMockProvider(options: MockProviderOptions = {}): LlmProvid
     streamTurn: (input) => streamText(`${buildTurnText(input)}\n\n${buildAgentFocusFooter(input)}`, chunkDelayMs),
     streamSummary: (input) =>
       streamText(`${buildSummaryText(input)}\n\n${buildTheoryFooter(input)}`, chunkDelayMs),
+    streamGuidance: (input) => streamText(buildGuidanceText(input), chunkDelayMs),
   }
 }
 
@@ -150,6 +153,96 @@ function buildTheoryFooter(input: ProviderSummaryInput) {
     guide,
     'These theories are interpretive lenses, not diagnoses; their value is to generate clearer next questions.',
   ].join('\n')
+}
+
+function buildGuidanceText(input: NeedsGuideInput) {
+  const isChinese = input.config.discussionLanguage === 'zh'
+  if (input.stage === 'summary') return buildGuidanceSummary(input, isChinese)
+
+  if (isChinese) {
+    const prompts = {
+      story:
+        '### 引导者\n先不用组织得很完美。请告诉我：发生了什么？现在最卡住你的点是什么？你最希望圆桌理解哪一部分？',
+      'feelings-needs':
+        '### 引导者\n我听到了事情的大概。现在我们往里走一层：这件事让你最明显的感受是什么？你觉得哪一种需要没有被看见？你害怕失去什么？',
+      'boundary-request':
+        '### 引导者\n最后把它落到表达上：你希望这件事往什么方向变化？你的边界是什么？如果只说一句话，你想怎样开口？',
+    }
+    return prompts[input.stage]
+  }
+
+  const prompts = {
+    story:
+      '### Guide\nNo need to make it polished yet. What happened, what feels most stuck, and what do you most want the roundtable to understand?',
+    'feelings-needs':
+      '### Guide\nI have the rough story. Now go one layer deeper: what feelings are strongest, what need feels unseen, and what are you afraid of losing?',
+    'boundary-request':
+      '### Guide\nNow make it speakable: what outcome do you hope for, what boundary matters, and what is one sentence or action you could try next?',
+  }
+  return prompts[input.stage]
+}
+
+function buildGuidanceSummary(input: NeedsGuideInput, isChinese: boolean) {
+  const story = latestUserAnswer(input.messages, 'story')
+  const feelings = latestUserAnswer(input.messages, 'feelings-needs')
+  const boundary = latestUserAnswer(input.messages, 'boundary-request')
+  const roughQuestion = input.initialQuestion.trim()
+
+  if (isChinese) {
+    return [
+      '## 需求总结',
+      '',
+      `**圆桌问题：** 我在这个关系或情绪处境里，如何理解自己的感受、需求和边界，并找到一个合适的表达方式？`,
+      '',
+      '### 发生了什么',
+      story || roughQuestion || '用户还没有提供足够的事件描述。',
+      '',
+      '### 我的感受',
+      feelings || '需要继续澄清具体感受，以及这些感受背后在保护什么。',
+      '',
+      '### 我的需求',
+      feelings
+        ? '我可能需要被理解、被尊重、获得更清楚的回应，或确认这段关系里的安全感和互惠。'
+        : '需要进一步区分真实需要、期待、害怕和可验证事实。',
+      '',
+      '### 边界或请求',
+      boundary || '需要把边界或请求转成一句温和但清楚的话。',
+      '',
+      '### 希望圆桌重点讨论',
+      '请圆桌帮助区分感受、事实、需求、边界和下一步表达，并保留可能存在的不同解释。',
+    ].join('\n')
+  }
+
+  return [
+    '## Needs Summary',
+    '',
+    '**Roundtable question:** How should I understand my feelings, needs, and boundaries in this relationship situation, and what would be a useful next expression?',
+    '',
+    '### What happened',
+    story || roughQuestion || 'The user has not provided enough story detail yet.',
+    '',
+    '### Feelings',
+    feelings || 'The concrete feelings still need clarification, especially what they may be protecting.',
+    '',
+    '### Needs',
+    feelings
+      ? 'The user may need understanding, respect, clearer response, safety, or reciprocity.'
+      : 'The user still needs to separate needs, expectations, fears, and observable facts.',
+    '',
+    '### Boundary or request',
+    boundary || 'The boundary or request should be turned into one clear but gentle sentence.',
+    '',
+    '### What the roundtable should focus on',
+    'Help separate feelings, facts, needs, boundaries, and the next expression while preserving multiple plausible readings.',
+  ].join('\n')
+}
+
+function latestUserAnswer(messages: GuidanceMessage[], stage: GuidanceMessage['stage']) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message.stage === stage && message.speakerType === 'user') return message.content
+  }
+  return ''
 }
 
 async function* streamText(text: string, chunkDelayMs: number) {

@@ -1,13 +1,19 @@
 import cors from 'cors'
 import express, { type Response } from 'express'
-import type { DiscussionBrief, ProviderSummaryInput, ProviderTurnInput } from '../src/types'
+import type {
+  DiscussionBrief,
+  GuidanceStage,
+  NeedsGuideInput,
+  ProviderSummaryInput,
+  ProviderTurnInput,
+} from '../src/types'
 import {
   buildDeepSeekPayload,
   streamDeepSeekChat,
   type DeepSeekPayload,
 } from './deepseekAdapter'
 import type { ServerConfig } from './env'
-import { buildAgentPrompt, buildModeratorPrompt } from './promptBuilder'
+import { buildAgentPrompt, buildModeratorPrompt, buildNeedsGuidePrompt } from './promptBuilder'
 
 type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
 
@@ -67,6 +73,27 @@ export function createApp(config: ServerConfig) {
       model: config.deepseekModel,
       temperature: 0.35,
       maxTokens: 1100,
+    })
+
+    await streamProviderResponse(response, config, payload)
+  })
+
+  app.post('/api/needs-guide', async (request, response) => {
+    prepareSse(response)
+
+    const validation = validateNeedsGuideRequest(request.body)
+    if (!validation.ok) {
+      sendSse(response, 'error', { error: validation.error })
+      response.end()
+      return
+    }
+
+    const prompt = buildNeedsGuidePrompt(validation.value)
+    const payload = buildDeepSeekPayload({
+      prompt,
+      model: config.deepseekModel,
+      temperature: validation.value.stage === 'summary' ? 0.35 : 0.55,
+      maxTokens: validation.value.stage === 'summary' ? 900 : 420,
     })
 
     await streamProviderResponse(response, config, payload)
@@ -173,6 +200,24 @@ function validateSummaryRequest(value: unknown): ValidationResult<ProviderSummar
   }
 }
 
+function validateNeedsGuideRequest(value: unknown): ValidationResult<NeedsGuideInput> {
+  if (!isRecord(value)) return invalid('Request body must be an object.')
+  if (value.provider !== 'deepseek') return invalid('Only the deepseek provider is supported.')
+  if (!isRecord(value.config)) return invalid('Missing roundtable config.')
+  if (!isGuidanceStage(value.stage)) return invalid('Missing or invalid guidance stage.')
+  if (!Array.isArray(value.messages)) return invalid('Missing guidance messages.')
+
+  return {
+    ok: true as const,
+    value: {
+      config: value.config as unknown as NeedsGuideInput['config'],
+      stage: value.stage,
+      messages: value.messages as NeedsGuideInput['messages'],
+      initialQuestion: typeof value.initialQuestion === 'string' ? value.initialQuestion : '',
+    },
+  }
+}
+
 function readDiscussionBrief(value: unknown): DiscussionBrief {
   if (!isRecord(value)) return emptyDiscussionBrief()
 
@@ -210,6 +255,15 @@ function readStringArray(value: unknown) {
 
 function readStringField(value: Record<string, unknown>, key: string) {
   return typeof value[key] === 'string' ? value[key] : ''
+}
+
+function isGuidanceStage(value: unknown): value is GuidanceStage {
+  return (
+    value === 'story' ||
+    value === 'feelings-needs' ||
+    value === 'boundary-request' ||
+    value === 'summary'
+  )
 }
 
 function invalid(error: string) {

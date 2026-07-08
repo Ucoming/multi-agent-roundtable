@@ -42,6 +42,8 @@ export type ProviderMode = 'mock' | 'deepseek'
 
 export type DiscussionLanguage = 'zh' | 'en'
 
+export type GuidanceStage = 'story' | 'feelings-needs' | 'boundary-request' | 'summary'
+
 export interface AgentProfile {
   id: string
   name: string
@@ -57,6 +59,7 @@ export interface AgentProfile {
 
 export interface RoundtableConfig {
   question: string
+  preDiscussionContext?: string
   providerMode: ProviderMode
   discussionLanguage: DiscussionLanguage
   template: RoundtableTemplate
@@ -145,11 +148,27 @@ export interface ProviderSummaryInput {
   discussionBrief: DiscussionBrief
 }
 
+export interface GuidanceMessage {
+  id: string
+  speakerType: 'guide' | 'user'
+  stage: GuidanceStage
+  content: string
+  timestamp: string
+}
+
+export interface NeedsGuideInput {
+  config: RoundtableConfig
+  stage: GuidanceStage
+  messages: GuidanceMessage[]
+  initialQuestion: string
+}
+
 export interface LlmProvider {
   id: string
   label: string
   streamTurn(input: ProviderTurnInput): AsyncGenerator<ProviderStreamItem>
   streamSummary?(input: ProviderSummaryInput): AsyncGenerator<ProviderStreamItem>
+  streamGuidance?(input: NeedsGuideInput): AsyncGenerator<ProviderStreamItem>
 }
 
 export interface RoundtableRunResult {

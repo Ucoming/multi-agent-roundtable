@@ -2,6 +2,7 @@ import type {
   AgentProfile,
   DiscussionBrief,
   DiscussionMessage,
+  NeedsGuideInput,
   ProviderSummaryInput,
   ProviderTurnInput,
 } from '../src/types'
@@ -42,6 +43,10 @@ export function buildAgentPrompt(input: ProviderTurnInput): ChatPrompt {
     ].join('\n'),
     user: [
       `Original user question: ${input.config.question}`,
+      '',
+      'Pre-discussion context:',
+      input.config.preDiscussionContext?.trim() || 'None provided.',
+      '',
       `Required response language: ${outputLanguage}`,
       `Discussion mode: ${input.config.discussionMode}`,
       `Final output type: ${input.config.finalOutputType}`,
@@ -84,6 +89,10 @@ export function buildModeratorPrompt(input: ProviderSummaryInput): ChatPrompt {
     ].join('\n'),
     user: [
       `Original user question: ${input.config.question}`,
+      '',
+      'Pre-discussion context:',
+      input.config.preDiscussionContext?.trim() || 'None provided.',
+      '',
       `Required response language: ${outputLanguage}`,
       `Discussion mode: ${input.config.discussionMode}`,
       `Final output type: ${input.config.finalOutputType}`,
@@ -107,6 +116,37 @@ export function buildModeratorPrompt(input: ProviderSummaryInput): ChatPrompt {
       '- Theory connection: connect the user problem and discussion to 2-4 relevant theories/frameworks, explain the fit and the limits',
       '- Suggested next conversation or experiment',
       '- Safety or boundary notes if relevant',
+    ].join('\n'),
+  }
+}
+
+export function buildNeedsGuidePrompt(input: NeedsGuideInput): ChatPrompt {
+  const outputLanguage = languageName(input.config.discussionLanguage)
+  const isSummary = input.stage === 'summary'
+
+  return {
+    system: [
+      'You are the pre-roundtable needs clarification guide.',
+      'Your job is to help the user clarify a relationship, emotional, or interpersonal concern before it goes to the multi-agent roundtable.',
+      `Required output language: ${outputLanguage}.`,
+      'Use warm, concise Markdown.',
+      'Ask one focused question at a time during guidance stages.',
+      'Do not diagnose, prescribe treatment, or replace professional therapy, legal advice, or emergency support.',
+      'If the user mentions self-harm, violence, coercion, abuse, or immediate danger, prioritize real-world safety and trusted human or emergency support.',
+      isSummary
+        ? 'Now produce the final needs summary in the required fixed Markdown structure.'
+        : 'Now produce the next guide message for the current stage.',
+    ].join('\n'),
+    user: [
+      `Initial user question or rough thought: ${input.initialQuestion || 'No initial question provided.'}`,
+      `Current stage: ${input.stage}`,
+      `Discussion language: ${outputLanguage}`,
+      '',
+      'Guidance transcript so far:',
+      formatGuidanceTranscript(input.messages),
+      '',
+      'Stage instruction:',
+      formatGuidanceStageInstruction(input.stage, input.config.discussionLanguage),
     ].join('\n'),
   }
 }
@@ -141,6 +181,63 @@ function formatMessage(message: DiscussionMessage) {
     `${message.speakerName} | ${speakerType} | round ${message.round} | role: ${message.role}`,
     message.content,
   ].join('\n')
+}
+
+function formatGuidanceTranscript(messages: NeedsGuideInput['messages']) {
+  if (messages.length === 0) return 'No guidance transcript yet.'
+
+  return messages
+    .map((message, index) => {
+      const speaker = message.speakerType === 'guide' ? 'Guide' : 'User'
+      return `${index + 1}. ${speaker} | ${message.stage}\n${message.content}`
+    })
+    .join('\n\n')
+}
+
+function formatGuidanceStageInstruction(stage: NeedsGuideInput['stage'], language: string | undefined) {
+  const isEnglish = language === 'en'
+
+  if (stage === 'story') {
+    return isEnglish
+      ? 'Ask the user to describe what happened, what feels stuck, and what they most want the roundtable to understand. Do not summarize yet.'
+      : '请引导用户描述发生了什么、现在最卡住的点是什么、最希望圆桌理解什么。不要总结。'
+  }
+
+  if (stage === 'feelings-needs') {
+    return isEnglish
+      ? 'Ask the user to name feelings, unmet needs, what they fear losing, and what they wish could be understood. Do not summarize yet.'
+      : '请引导用户说出感受、未被满足的需要、害怕失去什么、真正想被理解什么。不要总结。'
+  }
+
+  if (stage === 'boundary-request') {
+    return isEnglish
+      ? 'Ask the user to clarify desired outcome, boundary, possible request, and one next sentence or action. Do not summarize yet.'
+      : '请引导用户澄清希望的结果、边界、可以提出的请求，以及下一句话或下一步行动。不要总结。'
+  }
+
+  return isEnglish
+    ? [
+        'Create the final Markdown summary using exactly these sections:',
+        '## Needs Summary',
+        '**Roundtable question:** ...',
+        '### What happened',
+        '### Feelings',
+        '### Needs',
+        '### Boundary or request',
+        '### What the roundtable should focus on',
+        'The roundtable question must be a clear, discussable question under 45 words.',
+      ].join('\n')
+    : [
+        '请使用以下固定 Markdown 结构生成最终总结：',
+        '## 需求总结',
+        '**圆桌问题：** ...',
+        '### 发生了什么',
+        '### 我的感受',
+        '### 我的需求',
+        '### 边界或请求',
+        '### 希望圆桌重点讨论',
+        '圆桌问题必须是一个清晰、适合讨论的问题，尽量不超过 45 个汉字。',
+      ].join('\n')
 }
 
 function formatAgentAttentionFilter(agent: AgentProfile) {

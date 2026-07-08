@@ -37,6 +37,10 @@ Exported: ${state.exportedAt}
 
 ${state.config.question}
 
+## Pre-Discussion Context
+
+${state.config.preDiscussionContext || 'No pre-discussion context provided.'}
+
 ## Configuration
 
 - Template: ${state.config.template}
@@ -107,6 +111,10 @@ export async function downloadPdf(state: RoundtableExportState) {
 
   write('Multi-Agent Roundtable Export', 18, 22)
   write(`Question: ${state.config.question}`, 11, 15)
+  if (state.config.preDiscussionContext) {
+    write('Pre-Discussion Context', 14, 18)
+    write(state.config.preDiscussionContext)
+  }
   write(
     `Configuration: ${state.config.template}, ${state.config.roundCount} rounds, ${state.config.speakingOrder} order, ${state.config.finalOutputType} output.`,
   )

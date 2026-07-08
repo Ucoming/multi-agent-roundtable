@@ -2,9 +2,11 @@ import { createAgentsFromTemplate, defaultConfig, templateLabels } from '../data
 import { createDiscussionPlan, getSpeakingSequence, runRoundtable } from './discussionEngine'
 import { createJsonExport, createMarkdownExport } from './exports'
 import { createMockProvider } from './mockProvider'
+import { extractRoundtableQuestion } from './needsGuide'
 import type {
   DiscussionBrief,
   DiscussionMessage,
+  GuidanceMessage,
   LlmProvider,
   RoundtableTemplate,
 } from '../types'
@@ -141,7 +143,12 @@ describe('exports', () => {
       createMockProvider({ chunkDelayMs: 0 }),
     )
     const state = {
-      config: { ...defaultConfig, template: 'debate' as const, discussionMode: 'debate' as const },
+      config: {
+        ...defaultConfig,
+        template: 'debate' as const,
+        discussionMode: 'debate' as const,
+        preDiscussionContext: '## Needs Summary\n**Roundtable question:** What should I say next?',
+      },
       agents,
       messages: result.messages,
       summary: result.summary,
@@ -153,11 +160,37 @@ describe('exports', () => {
     const json = createJsonExport(state)
 
     expect(markdown).toContain('## Question')
+    expect(markdown).toContain('## Pre-Discussion Context')
+    expect(markdown).toContain('What should I say next?')
     expect(markdown).toContain(agents[0].name)
     expect(markdown).toContain(result.messages[0].content)
     expect(markdown).toContain(result.summary.content)
     expect(json).toContain(defaultConfig.question)
     expect(JSON.parse(json).summary.content).toBe(result.summary.content)
+  })
+})
+
+describe('needs guide', () => {
+  it('mock guidance generates a summary with an extractable roundtable question', async () => {
+    const provider = createMockProvider({ chunkDelayMs: 0 })
+    const messages: GuidanceMessage[] = [
+      createGuidanceMessage('user', 'story', 'We keep misunderstanding each other.'),
+      createGuidanceMessage('user', 'feelings-needs', 'I feel anxious and need clarity.'),
+      createGuidanceMessage('user', 'boundary-request', 'I want to ask for a calmer conversation.'),
+    ]
+    let content = ''
+
+    for await (const item of provider.streamGuidance?.({
+      config: defaultConfig,
+      stage: 'summary',
+      initialQuestion: 'I am confused.',
+      messages,
+    }) ?? []) {
+      content += typeof item === 'string' ? item : item.type === 'chunk' ? item.text : ''
+    }
+
+    expect(content).toContain('圆桌问题')
+    expect(extractRoundtableQuestion(content, '')).toContain('如何理解自己的感受')
   })
 })
 
@@ -174,6 +207,20 @@ function createUserMessage(content: string): DiscussionMessage {
     content,
     tokenEstimate: 5,
     costEstimate: 0,
+    timestamp: '2026-07-08T00:00:00.000Z',
+  }
+}
+
+function createGuidanceMessage(
+  speakerType: GuidanceMessage['speakerType'],
+  stage: GuidanceMessage['stage'],
+  content: string,
+): GuidanceMessage {
+  return {
+    id: `${speakerType}-${stage}-${content.length}`,
+    speakerType,
+    stage,
+    content,
     timestamp: '2026-07-08T00:00:00.000Z',
   }
 }
