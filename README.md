@@ -14,7 +14,9 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Safe GFM Markdown rendering for agent messages and moderator summaries, including lists, tables, quotes, inline code, and code blocks.
 - Discussion language control for Chinese or English model output.
 - Whole-table discussion brief for every turn, including common ground, tensions, open questions, and multiple prior reference points.
+- Agent-specific attention filtering so the shared brief does not flatten each persona's role, theory lens, or speaking style.
 - Deliberation protocol that requires later agents to respond to prior speakers with agreement, disagreement, or partial agreement instead of isolated turn-taking.
+- Moderator theory connection that maps the user's problem and table discussion to relevant frameworks such as attachment theory, NVC, CBT, repair attempts, boundaries, decision theory, or cognitive bias lenses.
 - Speaking orders: fixed, deterministic random, and moderator-called.
 - Themes: Warm Family, Work Mode, and Tech Vision, with generated local PNG assets.
 - Provider modes: Mock demo and DeepSeek live through the local Express API.
@@ -81,9 +83,9 @@ The frontend uses the `LlmProvider` interface. `createMockProvider` streams dete
 - `stream_options.include_usage: true`
 - `thinking.type: disabled`
 
-The group-chat model is sequential at the API layer: one API call per speaking agent. It is not limited to the previous message. Each later agent receives the visible transcript plus a compact table brief with common ground, tensions, open questions, and several prior reference points; the moderator receives the final transcript and final table brief.
+The group-chat model is sequential at the API layer: one API call per speaking agent. It is not limited to the previous message. Each later agent receives the visible transcript plus a compact table brief with common ground, tensions, open questions, and several prior reference points. The table brief is treated as a shared compressed map, not a consensus. Each agent also receives an agent-specific attention filter derived from its role, system prompt, and speaking style.
 
-Each live agent prompt now includes a deliberation contract: use Markdown, answer in the selected language, respond to the whole table state, name the prior speakers being addressed, state whether it agrees, disagrees, or partly agrees, and preserve unresolved disagreement when the question has no single correct answer. The moderator synthesis is asked to separate common ground, unresolved tension, multiple plausible outcomes, next conversation moves, and safety or boundary notes.
+Each live agent prompt now includes a deliberation contract: use Markdown, answer in the selected language, respond to the whole table state, name the prior speakers being addressed, state whether it agrees, disagrees, or partly agrees, and preserve unresolved disagreement when the question has no single correct answer. The moderator synthesis is asked to separate common ground, unresolved tension, multiple plausible outcomes, theory connections, next conversation moves, and safety or boundary notes. Theory connections must explain both fit and limits, and must not be framed as diagnosis or professional treatment advice.
 
 ## Relationship Reflection Boundary
 
@@ -112,3 +114,4 @@ The richer relationship agents are built as method-inspired archetypes rather th
 - 2026-07-08: Added safe Markdown rendering, a Chinese/English discussion language selector, and a stronger disagreement-aware deliberation protocol for agent turns and moderator summaries.
 - 2026-07-08: Expanded the default relationship agent design using public relationship frameworks and Chinese internet relationship-advice archetypes, adding more distinctive agents plus a Dating Clarity template and PUA/manipulation risk guardrails.
 - 2026-07-08: Reworked turn routing from latest-message handoff to whole-table discussion briefs, with multi-speaker reference tracking in prompts, UI, exports, and tests.
+- 2026-07-08: Added agent-specific attention filtering and required theory mapping in moderator summaries, so final outputs connect the user's situation to relevant frameworks without turning them into diagnoses.

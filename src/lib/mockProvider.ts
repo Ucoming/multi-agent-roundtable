@@ -15,8 +15,9 @@ export function createMockProvider(options: MockProviderOptions = {}): LlmProvid
   return {
     id: 'mock-streaming',
     label: 'Mock Streaming Provider',
-    streamTurn: (input) => streamText(buildTurnText(input), chunkDelayMs),
-    streamSummary: (input) => streamText(buildSummaryText(input), chunkDelayMs),
+    streamTurn: (input) => streamText(`${buildTurnText(input)}\n\n${buildAgentFocusFooter(input)}`, chunkDelayMs),
+    streamSummary: (input) =>
+      streamText(`${buildSummaryText(input)}\n\n${buildTheoryFooter(input)}`, chunkDelayMs),
   }
 }
 
@@ -113,6 +114,41 @@ function buildSummaryText(input: ProviderSummaryInput) {
     openQuestions || 'Turn the most important uncertainty into one sentence the user could actually say.',
     '',
     `### Output\n${decisionSentence}`,
+  ].join('\n')
+}
+
+function buildAgentFocusFooter(input: ProviderTurnInput) {
+  const isChinese = input.config.discussionLanguage === 'zh'
+  if (isChinese) {
+    return [
+      '### Agent-specific focus',
+      `这个发言不是复述全桌简报，而是由 **${input.agent.name}** 的角色过滤后选择重点。`,
+      `角色注意力：${input.agent.role}`,
+    ].join('\n')
+  }
+
+  return [
+    '### Agent-specific focus',
+    `This turn is filtered through **${input.agent.name}** rather than a neutral consensus voice.`,
+    `Role attention: ${input.agent.role}`,
+  ].join('\n')
+}
+
+function buildTheoryFooter(input: ProviderSummaryInput) {
+  const isChinese = input.config.discussionLanguage === 'zh'
+  const guide = theoryDirective(input.config.discussionMode, isChinese)
+  if (isChinese) {
+    return [
+      '### Theory Link',
+      guide,
+      '这些理论只作为解释框架，不等同于诊断；真正有价值的是用它们生成更清楚的下一步问题。',
+    ].join('\n')
+  }
+
+  return [
+    '### Theory Link',
+    guide,
+    'These theories are interpretive lenses, not diagnoses; their value is to generate clearer next questions.',
   ].join('\n')
 }
 
@@ -222,6 +258,24 @@ function outputDirective(outputType: string, isChinese: boolean) {
       : 'Recommended output: a structured report that records context, options, evidence, risks, and recommendation.',
   }
   return directives[outputType] ?? directives.summary
+}
+
+function theoryDirective(mode: string, isChinese: boolean) {
+  const isRelationshipMode =
+    mode === 'relationship-reflection' ||
+    mode === 'emotional-clarity' ||
+    mode === 'conflict-mediation' ||
+    mode === 'dating-clarity'
+
+  if (isChinese) {
+    return isRelationshipMode
+      ? '可以把本次讨论连接到成人依恋理论、非暴力沟通、CBT 的想法-感受-行为链条、Gottman 式修复尝试，以及边界/同意框架。'
+      : '可以把本次讨论连接到决策理论、认知偏差、冲突解决框架和系统思维。'
+  }
+
+  return isRelationshipMode
+    ? 'Map the discussion to adult attachment theory, Nonviolent Communication, CBT thought-feeling-behavior links, Gottman-style repair attempts, and boundary/consent frameworks.'
+    : 'Map the discussion to decision theory, cognitive bias lenses, conflict-resolution frameworks, and systems thinking.'
 }
 
 function chooseStance(turnIndex: number, round: number) {

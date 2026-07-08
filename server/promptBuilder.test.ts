@@ -24,6 +24,7 @@ describe('prompt builder', () => {
 
     expect(prompt.system).toContain(agents[2].systemPrompt)
     expect(prompt.user).toContain('Should we launch the product now?')
+    expect(prompt.user).toContain('Agent-specific attention filter')
     expect(prompt.user).toContain('Current table brief')
     expect(prompt.user).toContain('Reference points to consider')
     expect(prompt.user).toContain('The latest message names a risk.')
@@ -49,6 +50,8 @@ describe('prompt builder', () => {
     expect(prompt.system).toContain('moderator')
     expect(prompt.user).toContain('action-list')
     expect(prompt.user).toContain('Final table brief')
+    expect(prompt.user).toContain('Relevant theory lenses to consider')
+    expect(prompt.user).toContain('Theory connection')
     expect(prompt.user).toContain('Prototype the smallest path.')
     expect(prompt.user).toContain('Main disagreement or unresolved tension')
     expect(prompt.user).toContain('Multiple plausible readings or outcomes')

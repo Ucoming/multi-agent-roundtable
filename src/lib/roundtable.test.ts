@@ -53,7 +53,7 @@ describe('roundtable run', () => {
     )
 
     expect(result.messages).toHaveLength(agents.length * 2)
-    expect(result.summary.content).toContain('主持人总结')
+    expect(result.summary.content).toContain('Theory Link')
     expect(result.costSummary.totalTokens).toBeGreaterThan(0)
   })
 
