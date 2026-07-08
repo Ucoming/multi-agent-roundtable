@@ -1,8 +1,18 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import { App } from './App'
 
 describe('App', () => {
+  beforeEach(() => {
+    vi.stubGlobal('indexedDB', undefined)
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
   it('switches topic space and runs a mock streaming discussion', async () => {
     render(<App />)
 
@@ -38,6 +48,24 @@ describe('App', () => {
 
     expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
     expect(screen.getByText(/spoke last/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
+  })
+
+  it('auto-saves a completed discussion and restores it from history', async () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
+
+    expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('1 saved')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^new$/i }))
+    expect(screen.getByText(/Ask a question, choose a template/i)).toBeInTheDocument()
+
+    const loadButton = screen.getAllByRole('button', { name: /^load /i })[0]
+    fireEvent.click(loadButton)
+
+    expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
   })
 

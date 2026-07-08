@@ -38,6 +38,7 @@ interface ControlPanelProps {
   onExportMarkdown(): void
   onExportJson(): void
   onExportPdf(): void
+  historySlot?: ReactNode
   needsGuideSlot?: ReactNode
 }
 
@@ -62,6 +63,7 @@ export function ControlPanel({
   onExportMarkdown,
   onExportJson,
   onExportPdf,
+  historySlot,
   needsGuideSlot,
 }: ControlPanelProps) {
   return (
@@ -72,6 +74,8 @@ export function ControlPanel({
           <h2>Session setup</h2>
         </div>
       </div>
+
+      {historySlot}
 
       <label className="field">
         <span>Provider</span>

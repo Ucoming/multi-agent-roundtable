@@ -532,6 +532,163 @@ textarea:disabled {
   font-weight: 700;
 }
 
+.session-history-card {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.session-history-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.session-history-top h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.mini-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--accent-strong);
+  background: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.save-state,
+.session-history-details summary,
+.session-meta,
+.session-updated {
+  display: flex;
+  align-items: center;
+}
+
+.save-state {
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.save-state-saved {
+  color: var(--accent-strong);
+}
+
+.save-state-error {
+  color: #9d3030;
+}
+
+.session-history-details summary {
+  gap: 7px;
+  min-height: 32px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  color: var(--accent-strong);
+  background: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.session-history-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.session-empty {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.session-list {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+  margin-top: 10px;
+}
+
+.session-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 7px;
+  align-items: stretch;
+}
+
+.session-load-button,
+.session-delete-button {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-muted);
+}
+
+.session-load-button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  color: var(--text);
+  text-align: left;
+}
+
+.session-list-item.is-current .session-load-button {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface));
+}
+
+.session-title,
+.session-meta,
+.session-updated,
+.session-preview {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-title {
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.session-meta,
+.session-updated,
+.session-preview {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.session-preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.session-delete-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  color: var(--accent-strong);
+}
+
 .agent-grid,
 .control-grid,
 .primary-actions,

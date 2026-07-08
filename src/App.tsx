@@ -1,9 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { AgentRoster } from './components/AgentRoster'
 import { ControlPanel } from './components/ControlPanel'
 import { DiscussionView } from './components/DiscussionView'
 import { NeedsGuidePanel } from './components/NeedsGuidePanel'
+import {
+  SessionHistoryPanel,
+  type SessionSaveState,
+} from './components/SessionHistoryPanel'
 import { getTopicDefinition, topicCatalog } from './data/topicCatalog'
 import {
   createAgentFromPreset,
@@ -17,13 +21,23 @@ import { estimateTokens, summarizeCosts } from './lib/costs'
 import { runRoundtable } from './lib/discussionEngine'
 import { createMockProvider } from './lib/mockProvider'
 import { createServerProvider } from './lib/serverProvider'
+import {
+  deleteSession,
+  getSession,
+  listSessions,
+  saveSession,
+} from './lib/sessionStorage'
 import type {
   AgentProfile,
   ModeratorSummary,
   ProviderMode,
   RoundtableConfig,
   RoundtableExportState,
+  RoundtableSessionMeta,
+  RoundtableSessionSnapshot,
   RoundtableTemplate,
+  SessionListItem,
+  SessionStatus,
   ThemeId,
   TopicSpaceId,
 } from './types'
@@ -52,8 +66,13 @@ export function App() {
   const [summary, setSummary] = useState<ModeratorSummary>(() => createBlankSummary())
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState('')
+  const [sessions, setSessions] = useState<SessionListItem[]>([])
+  const [currentSession, setCurrentSession] = useState<RoundtableSessionMeta>()
+  const [autosaveEnabled, setAutosaveEnabled] = useState(false)
+  const [saveState, setSaveState] = useState<SessionSaveState>('idle')
   const stopRef = useRef(false)
   const interjectionQueueRef = useRef<RoundtableExportState['messages']>([])
+  const saveTimerRef = useRef<number | undefined>(undefined)
 
   const provider = useMemo(
     () =>
@@ -71,12 +90,76 @@ export function App() {
       summary,
       costSummary,
       exportedAt: new Date().toISOString(),
+      session: currentSession,
     }),
-    [agents, config, costSummary, messages, summary],
+    [agents, config, costSummary, currentSession, messages, summary],
   )
 
   const enabledAgentCount = agents.filter((agent) => agent.enabled).length
   const currentTopic = getTopicDefinition(config.topicSpace)
+
+  const refreshSessions = useCallback(async () => {
+    setSessions(await listSessions())
+  }, [])
+
+  useEffect(() => {
+    void refreshSessions()
+  }, [refreshSessions])
+
+  useEffect(() => {
+    if (!currentSession) {
+      setSaveState('idle')
+      return
+    }
+
+    if (!autosaveEnabled) {
+      setSaveState('saved')
+      return
+    }
+
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current)
+    }
+
+    setSaveState('saving')
+    saveTimerRef.current = window.setTimeout(() => {
+      const snapshot = createSessionSnapshot({
+        session: currentSession,
+        config,
+        agents,
+        messages,
+        summary,
+        costSummary,
+        error,
+      })
+
+      void saveSession(snapshot)
+        .then(refreshSessions)
+        .then(() => {
+          setSaveState('saved')
+          if (snapshot.session.status !== 'running') {
+            setAutosaveEnabled(false)
+          }
+        })
+        .catch(() => setSaveState('error'))
+    }, 350)
+
+    return () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current)
+      }
+    }
+  }, [
+    agents,
+    autosaveEnabled,
+    config,
+    costSummary,
+    currentSession,
+    error,
+    messages,
+    refreshSessions,
+    summary,
+  ])
 
   function updateConfig(patch: Partial<RoundtableConfig>) {
     setConfig((current) => ({ ...current, ...patch }))
@@ -159,12 +242,20 @@ export function App() {
       return
     }
 
+    const session = createSessionMeta(config, 'running')
+    const blankSummary = createBlankSummary()
+
     setError('')
     setMessages([])
-    setSummary(createBlankSummary())
+    setSummary(blankSummary)
+    setCurrentSession(session)
+    setAutosaveEnabled(true)
+    setSaveState('saving')
     setIsRunning(true)
     stopRef.current = false
     interjectionQueueRef.current = []
+
+    let finalStatus: SessionStatus = 'completed'
 
     try {
       const result = await runRoundtable(config, agents, provider, {
@@ -200,9 +291,16 @@ export function App() {
 
       setMessages(result.messages)
       setSummary(result.summary)
+      finalStatus = stopRef.current ? 'stopped' : 'completed'
     } catch (runError) {
+      finalStatus = 'error'
       setError(runError instanceof Error ? runError.message : 'The roundtable failed to run.')
     } finally {
+      setCurrentSession((current) =>
+        current?.id === session.id
+          ? { ...current, status: finalStatus, updatedAt: new Date().toISOString() }
+          : current,
+      )
       setIsRunning(false)
     }
   }
@@ -218,6 +316,68 @@ export function App() {
     const message = createUserInterjection(trimmed, messages.at(-1)?.round ?? 1)
     interjectionQueueRef.current = [...interjectionQueueRef.current, message]
     setMessages((current) => [...current, message])
+  }
+
+  async function loadSessionSnapshot(sessionId: string) {
+    if (isRunning) return
+
+    const snapshot = await getSession(sessionId)
+    if (!snapshot) {
+      setError('That saved discussion could not be found.')
+      await refreshSessions()
+      return
+    }
+
+    setConfig(snapshot.config)
+    setAgents(snapshot.agents)
+    setMessages(snapshot.messages)
+    setSummary(snapshot.summary)
+    setError(snapshot.error)
+    setCurrentSession(snapshot.session)
+    setAutosaveEnabled(false)
+    setSaveState('saved')
+  }
+
+  async function deleteSessionSnapshot(sessionId: string) {
+    if (isRunning) return
+
+    await deleteSession(sessionId)
+    await refreshSessions()
+
+    if (currentSession?.id === sessionId) {
+      setCurrentSession(undefined)
+      setAutosaveEnabled(false)
+      setSaveState('idle')
+    }
+  }
+
+  function createNewDiscussion() {
+    if (isRunning) return
+
+    const topic = getTopicDefinition(config.topicSpace)
+    const nextConfig: RoundtableConfig = {
+      ...defaultConfig,
+      providerMode: config.providerMode,
+      discussionLanguage: config.discussionLanguage,
+      topicSpace: topic.id,
+      theme: topic.theme,
+      template: topic.template,
+      discussionMode: topic.discussionMode,
+      finalOutputType: topic.finalOutputType,
+      discussionScene: config.discussionScene,
+      question: topic.defaultQuestion,
+      preDiscussionContext: undefined,
+    }
+
+    setConfig(nextConfig)
+    setAgents(createAgentsFromTemplate(nextConfig.template, nextConfig.question, nextConfig.theme))
+    setMessages([])
+    setSummary(createBlankSummary())
+    setError('')
+    setCurrentSession(undefined)
+    setAutosaveEnabled(false)
+    setSaveState('idle')
+    interjectionQueueRef.current = []
   }
 
   return (
@@ -287,6 +447,17 @@ export function App() {
           onExportMarkdown={() => downloadMarkdown(exportState)}
           onExportJson={() => downloadJson(exportState)}
           onExportPdf={() => downloadPdf(exportState)}
+          historySlot={
+            <SessionHistoryPanel
+              currentSessionId={currentSession?.id}
+              disabled={isRunning}
+              saveState={saveState}
+              sessions={sessions}
+              onDeleteSession={deleteSessionSnapshot}
+              onLoadSession={loadSessionSnapshot}
+              onNewDiscussion={createNewDiscussion}
+            />
+          }
           needsGuideSlot={
             <NeedsGuidePanel
               config={config}
@@ -312,6 +483,55 @@ function createBlankSummary(): ModeratorSummary {
     costEstimate: 0,
     timestamp: new Date().toISOString(),
   }
+}
+
+function createSessionMeta(config: RoundtableConfig, status: SessionStatus): RoundtableSessionMeta {
+  const now = new Date().toISOString()
+  return {
+    id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    title: createSessionTitle(config.question),
+    status,
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+function createSessionSnapshot({
+  session,
+  config,
+  agents,
+  messages,
+  summary,
+  costSummary,
+  error,
+}: {
+  session: RoundtableSessionMeta
+  config: RoundtableConfig
+  agents: AgentProfile[]
+  messages: RoundtableExportState['messages']
+  summary: ModeratorSummary
+  costSummary: RoundtableExportState['costSummary']
+  error: string
+}): RoundtableSessionSnapshot {
+  const now = new Date().toISOString()
+  const updatedSession = { ...session, updatedAt: now }
+
+  return {
+    session: updatedSession,
+    config,
+    agents,
+    messages,
+    summary,
+    costSummary,
+    error,
+    exportedAt: now,
+  }
+}
+
+function createSessionTitle(question: string) {
+  const compact = question.replace(/\s+/g, ' ').trim()
+  if (!compact) return 'Untitled roundtable'
+  return compact.length > 64 ? `${compact.slice(0, 61)}...` : compact
 }
 
 function createUserInterjection(content: string, round: number): RoundtableExportState['messages'][number] {

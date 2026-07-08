@@ -48,6 +48,8 @@ export type DiscussionLanguage = 'zh' | 'en'
 
 export type GuidanceStage = 'story' | 'feelings-needs' | 'boundary-request' | 'summary'
 
+export type SessionStatus = 'draft' | 'running' | 'completed' | 'stopped' | 'error'
+
 export interface AgentProfile {
   id: string
   name: string
@@ -189,4 +191,25 @@ export interface RoundtableExportState {
   summary: ModeratorSummary
   costSummary: CostSummary
   exportedAt: string
+  session?: RoundtableSessionMeta
+}
+
+export interface RoundtableSessionMeta {
+  id: string
+  title: string
+  status: SessionStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RoundtableSessionSnapshot extends RoundtableExportState {
+  session: RoundtableSessionMeta
+  error: string
+}
+
+export interface SessionListItem extends RoundtableSessionMeta {
+  topicSpace: TopicSpaceId
+  providerMode: ProviderMode
+  messageCount: number
+  summaryPreview: string
 }
