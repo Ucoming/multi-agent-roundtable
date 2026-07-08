@@ -57,7 +57,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 
     expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByText('1 saved')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/1 saved discussions/i)).toBeInTheDocument())
 
     fireEvent.click(screen.getByRole('button', { name: /^new$/i }))
     expect(screen.getByText(/Ask a question, choose a template/i)).toBeInTheDocument()

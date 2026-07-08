@@ -154,6 +154,29 @@ textarea:disabled {
   box-shadow: var(--shadow);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.history-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .brand-lockup {
   display: flex;
   align-items: center;
@@ -1473,6 +1496,16 @@ blockquote span {
     flex-direction: column;
     width: min(360px, calc(100vw - 24px));
     max-width: min(360px, calc(100vw - 24px));
+  }
+
+  .topbar-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-shortcut {
+    width: 100%;
   }
 
   .theme-switcher {

@@ -23,11 +23,11 @@ export function SessionHistoryPanel({
   onDeleteSession,
 }: SessionHistoryPanelProps) {
   return (
-    <section className="session-history-card" aria-label="Conversation history">
+    <section className="session-history-card" id="conversation-history" aria-label="Conversation history">
       <div className="session-history-top">
         <div>
           <p className="eyebrow">History</p>
-          <h3>Saved discussions</h3>
+          <h3>Conversation History / 对话历史</h3>
         </div>
         <button
           className="mini-action-button"
@@ -48,11 +48,13 @@ export function SessionHistoryPanel({
       <details className="session-history-details" open>
         <summary>
           <History size={15} />
-          <span>{sessions.length} saved</span>
+          <span>{sessions.length} saved discussions</span>
         </summary>
 
         {sessions.length === 0 ? (
-          <p className="session-empty">No saved discussions yet.</p>
+          <p className="session-empty">
+            No saved discussions yet. Start a discussion and it will auto-save here.
+          </p>
         ) : (
           <div className="session-list">
             {sessions.map((session) => {

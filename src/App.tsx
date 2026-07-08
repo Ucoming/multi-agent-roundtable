@@ -393,21 +393,27 @@ export function App() {
           </div>
         </div>
 
-        <label className="theme-switcher">
-          <span>Topic</span>
-          <select
-            aria-label="Topic space"
-            value={config.topicSpace}
-            disabled={isRunning}
-            onChange={(event) => updateTopicSpace(event.target.value as TopicSpaceId)}
-          >
-            {topicCatalog.map((topic) => (
-              <option value={topic.id} key={topic.id}>
-                {topic.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="topbar-actions">
+          <a className="history-shortcut" href="#conversation-history">
+            History / 对话历史
+          </a>
+
+          <label className="theme-switcher">
+            <span>Topic</span>
+            <select
+              aria-label="Topic space"
+              value={config.topicSpace}
+              disabled={isRunning}
+              onChange={(event) => updateTopicSpace(event.target.value as TopicSpaceId)}
+            >
+              {topicCatalog.map((topic) => (
+                <option value={topic.id} key={topic.id}>
+                  {topic.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
       <div className="workspace">
