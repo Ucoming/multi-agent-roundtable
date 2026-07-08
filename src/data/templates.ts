@@ -250,6 +250,7 @@ export const finalOutputLabels: Record<FinalOutputType, string> = {
 export const defaultConfig: RoundtableConfig = {
   question:
     'How should we design a multi-agent discussion product that feels useful, trustworthy, and enjoyable to revisit?',
+  providerMode: 'mock',
   template: 'brainstorming',
   roundCount: 2,
   speakingOrder: 'fixed',

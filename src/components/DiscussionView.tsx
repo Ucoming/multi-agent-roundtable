@@ -52,8 +52,9 @@ export function DiscussionView({
             <MessageSquare size={28} />
             <h3>Ask a question, choose a template, and start the table.</h3>
             <p>
-              Mock streaming is enabled by default, so the public GitHub Pages build works without
-              API keys.
+              {config.providerMode === 'deepseek'
+                ? 'DeepSeek live mode uses the local Express API. Add DEEPSEEK_API_KEY to .env, then run npm run dev:all.'
+                : 'Mock streaming is enabled by default, so the public static build works without API keys.'}
             </p>
           </div>
         ) : (
@@ -70,7 +71,7 @@ export function DiscussionView({
                   <div>
                     <h3>{message.speakerName}</h3>
                     <p>
-                      Round {message.round} · {message.model} · {message.speakingStyle}
+                      Round {message.round} | {message.model} | {message.speakingStyle}
                     </p>
                   </div>
                 </div>

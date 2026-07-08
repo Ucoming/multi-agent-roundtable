@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { vi } from 'vitest'
 import { App } from './App'
 
 describe('App', () => {
@@ -25,5 +26,30 @@ describe('App', () => {
     expect(await screen.findByText(/contributions were made/i)).toBeInTheDocument()
     expect(screen.getByText(/spoke last/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
+  })
+
+  it('shows a live mode error returned by the local API', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(async () => {
+      return new Response(
+        'event: error\ndata: {"error":"DeepSeek API key is not configured."}\n\n',
+        {
+          headers: { 'Content-Type': 'text/event-stream' },
+        },
+      )
+    }) as typeof fetch
+
+    try {
+      render(<App />)
+
+      fireEvent.change(screen.getByLabelText('Provider mode'), {
+        target: { value: 'deepseek' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
+
+      expect(await screen.findByText(/DeepSeek API key is not configured/i)).toBeInTheDocument()
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 })

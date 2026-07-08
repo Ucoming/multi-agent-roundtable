@@ -28,6 +28,8 @@ export type ThemeId = 'warm-family' | 'work-mode' | 'tech-vision'
 
 export type DiscussionSceneId = 'cozy-roundtable' | 'strategy-room' | 'future-lab'
 
+export type ProviderMode = 'mock' | 'deepseek'
+
 export interface AgentProfile {
   id: string
   name: string
@@ -43,6 +45,7 @@ export interface AgentProfile {
 
 export interface RoundtableConfig {
   question: string
+  providerMode: ProviderMode
   template: RoundtableTemplate
   roundCount: number
   speakingOrder: SpeakingOrder
@@ -79,6 +82,22 @@ export interface CostSummary {
   totalCost: number
 }
 
+export interface ProviderUsage {
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens: number
+  costEstimate?: number
+  model?: string
+  source?: string
+}
+
+export type ProviderStreamEvent =
+  | { type: 'chunk'; text: string }
+  | { type: 'usage'; usage: ProviderUsage }
+  | { type: 'done'; usage?: ProviderUsage }
+
+export type ProviderStreamItem = string | ProviderStreamEvent
+
 export interface ProviderTurnInput {
   agent: AgentProfile
   config: RoundtableConfig
@@ -97,8 +116,8 @@ export interface ProviderSummaryInput {
 export interface LlmProvider {
   id: string
   label: string
-  streamTurn(input: ProviderTurnInput): AsyncGenerator<string>
-  streamSummary?(input: ProviderSummaryInput): AsyncGenerator<string>
+  streamTurn(input: ProviderTurnInput): AsyncGenerator<ProviderStreamItem>
+  streamSummary?(input: ProviderSummaryInput): AsyncGenerator<ProviderStreamItem>
 }
 
 export interface RoundtableRunResult {

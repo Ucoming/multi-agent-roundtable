@@ -17,6 +17,7 @@ import type {
   DiscussionSceneId,
   DiscussionMode,
   FinalOutputType,
+  ProviderMode,
   RoundtableConfig,
   RoundtableTemplate,
   SpeakingOrder,
@@ -27,6 +28,7 @@ interface ControlPanelProps {
   canExport: boolean
   isRunning: boolean
   onConfigChange(patch: Partial<RoundtableConfig>): void
+  onProviderModeChange(providerMode: ProviderMode): void
   onTemplateChange(template: RoundtableTemplate): void
   onRun(): void
   onStop(): void
@@ -41,12 +43,14 @@ const modeOptions = Object.keys(modeLabels) as DiscussionMode[]
 const outputOptions = Object.keys(finalOutputLabels) as FinalOutputType[]
 const sceneOptions = Object.keys(sceneLabels) as DiscussionSceneId[]
 const speakingOrders: SpeakingOrder[] = ['fixed', 'random', 'moderator']
+const providerOptions: ProviderMode[] = ['mock', 'deepseek']
 
 export function ControlPanel({
   config,
   canExport,
   isRunning,
   onConfigChange,
+  onProviderModeChange,
   onTemplateChange,
   onRun,
   onStop,
@@ -63,6 +67,22 @@ export function ControlPanel({
           <h2>Session setup</h2>
         </div>
       </div>
+
+      <label className="field">
+        <span>Provider</span>
+        <select
+          aria-label="Provider mode"
+          value={config.providerMode}
+          disabled={isRunning}
+          onChange={(event) => onProviderModeChange(event.target.value as ProviderMode)}
+        >
+          {providerOptions.map((provider) => (
+            <option value={provider} key={provider}>
+              {formatProvider(provider)}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="field">
         <span>Visual scene</span>
@@ -218,6 +238,14 @@ export function ControlPanel({
       </div>
     </aside>
   )
+}
+
+function formatProvider(provider: ProviderMode) {
+  const labels: Record<ProviderMode, string> = {
+    mock: 'Mock demo',
+    deepseek: 'DeepSeek live',
+  }
+  return labels[provider]
 }
 
 function formatOrder(order: SpeakingOrder) {

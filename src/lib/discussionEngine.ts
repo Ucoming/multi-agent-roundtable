@@ -3,6 +3,8 @@ import type {
   DiscussionMessage,
   LlmProvider,
   ModeratorSummary,
+  ProviderStreamItem,
+  ProviderUsage,
   RoundtableConfig,
   RoundtableRunResult,
   SpeakingOrder,
@@ -99,7 +101,9 @@ export async function runRoundtable(
 
       callbacks.onMessageStart?.(draft)
 
-      for await (const chunk of provider.streamTurn({
+      let usage: ProviderUsage | undefined
+
+      for await (const item of provider.streamTurn({
         agent,
         config,
         round: roundPlan.round,
@@ -108,15 +112,26 @@ export async function runRoundtable(
         previousMessages: messages,
       })) {
         if (callbacks.shouldStop?.()) break
-        draft = { ...draft, content: draft.content + chunk }
-        callbacks.onMessageChunk?.(draft, chunk)
+
+        const event = normalizeProviderItem(item)
+        if (event.type === 'usage') {
+          usage = event.usage
+          continue
+        }
+        if (event.type === 'done') {
+          usage = event.usage ?? usage
+          continue
+        }
+
+        draft = { ...draft, content: draft.content + event.text }
+        callbacks.onMessageChunk?.(draft, event.text)
       }
 
-      const tokenEstimate = estimateTokens(draft.content)
+      const tokenEstimate = usage?.totalTokens ?? estimateTokens(draft.content)
       const completeMessage = {
         ...draft,
         tokenEstimate,
-        costEstimate: estimateCost(agent.model, tokenEstimate),
+        costEstimate: usage?.costEstimate ?? estimateCost(agent.model, tokenEstimate),
       }
       messages.push(completeMessage)
       callbacks.onMessageComplete?.(completeMessage)
@@ -154,17 +169,30 @@ async function streamSummary(
     provider.streamSummary?.({ config, activeAgents, messages }) ??
     fallbackSummaryStream(config, activeAgents, messages)
 
-  for await (const chunk of stream) {
+  let usage: ProviderUsage | undefined
+
+  for await (const item of stream) {
     if (callbacks.shouldStop?.()) break
-    summary = { ...summary, content: summary.content + chunk }
-    callbacks.onSummaryChunk?.(summary, chunk)
+
+    const event = normalizeProviderItem(item)
+    if (event.type === 'usage') {
+      usage = event.usage
+      continue
+    }
+    if (event.type === 'done') {
+      usage = event.usage ?? usage
+      continue
+    }
+
+    summary = { ...summary, content: summary.content + event.text }
+    callbacks.onSummaryChunk?.(summary, event.text)
   }
 
-  const tokenEstimate = estimateTokens(summary.content)
+  const tokenEstimate = usage?.totalTokens ?? estimateTokens(summary.content)
   const completedSummary = {
     ...summary,
     tokenEstimate,
-    costEstimate: estimateCost('GPT-5.5', tokenEstimate),
+    costEstimate: usage?.costEstimate ?? estimateCost('GPT-5.5', tokenEstimate),
   }
   callbacks.onSummaryComplete?.(completedSummary)
   return completedSummary
@@ -186,6 +214,10 @@ async function* fallbackSummaryStream(
 ) {
   const strongestPoint = messages.at(-1)?.content.split('.').at(0) ?? 'The discussion is incomplete'
   yield `Moderator summary for ${activeAgents.length} agents: ${strongestPoint}. Final output type: ${config.finalOutputType}.`
+}
+
+function normalizeProviderItem(item: ProviderStreamItem) {
+  return typeof item === 'string' ? { type: 'chunk' as const, text: item } : item
 }
 
 function deterministicScore(input: string) {

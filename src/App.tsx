@@ -13,16 +13,18 @@ import { downloadJson, downloadMarkdown, downloadPdf } from './lib/exports'
 import { summarizeCosts } from './lib/costs'
 import { runRoundtable } from './lib/discussionEngine'
 import { createMockProvider } from './lib/mockProvider'
+import { createServerProvider } from './lib/serverProvider'
 import type {
   AgentProfile,
   ModeratorSummary,
+  ProviderMode,
   RoundtableConfig,
   RoundtableExportState,
   RoundtableTemplate,
   ThemeId,
 } from './types'
 
-const provider = createMockProvider({ chunkDelayMs: import.meta.env.MODE === 'test' ? 0 : 18 })
+const mockChunkDelayMs = import.meta.env.MODE === 'test' ? 0 : 18
 const minAgents = 1
 const maxAgents = 6
 
@@ -48,6 +50,13 @@ export function App() {
   const [error, setError] = useState('')
   const stopRef = useRef(false)
 
+  const provider = useMemo(
+    () =>
+      config.providerMode === 'deepseek'
+        ? createServerProvider()
+        : createMockProvider({ chunkDelayMs: mockChunkDelayMs }),
+    [config.providerMode],
+  )
   const costSummary = useMemo(() => summarizeCosts(messages, summary), [messages, summary])
   const exportState = useMemo<RoundtableExportState>(
     () => ({
@@ -84,6 +93,11 @@ export function App() {
         avatarUrl: getThemedAvatarUrl(agent.avatarUrl, theme),
       })),
     )
+  }
+
+  function updateProviderMode(providerMode: ProviderMode) {
+    setConfig((current) => ({ ...current, providerMode }))
+    setError('')
   }
 
   function updateAgent(id: string, patch: Partial<AgentProfile>) {
@@ -229,6 +243,7 @@ export function App() {
           canExport={messages.length > 0 || Boolean(summary.content)}
           isRunning={isRunning}
           onConfigChange={updateConfig}
+          onProviderModeChange={updateProviderMode}
           onTemplateChange={updateTemplate}
           onRun={startDiscussion}
           onStop={stopDiscussion}

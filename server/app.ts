@@ -1,0 +1,180 @@
+import cors from 'cors'
+import express, { type Response } from 'express'
+import type { ProviderSummaryInput, ProviderTurnInput } from '../src/types'
+import {
+  buildDeepSeekPayload,
+  streamDeepSeekChat,
+  type DeepSeekPayload,
+} from './deepseekAdapter'
+import type { ServerConfig } from './env'
+import { buildAgentPrompt, buildModeratorPrompt } from './promptBuilder'
+
+type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
+
+export function createApp(config: ServerConfig) {
+  const app = express()
+
+  app.use(
+    cors({
+      origin: [/^http:\/\/127\.0\.0\.1:\d+$/, /^http:\/\/localhost:\d+$/],
+    }),
+  )
+  app.use(express.json({ limit: '1mb' }))
+
+  app.get('/api/health', (_request, response) => {
+    response.json({
+      ok: true,
+      provider: 'deepseek',
+      model: config.deepseekModel,
+      hasDeepSeekKey: Boolean(config.deepseekApiKey),
+    })
+  })
+
+  app.post('/api/agent-turn', async (request, response) => {
+    prepareSse(response)
+
+    const validation = validateTurnRequest(request.body)
+    if (!validation.ok) {
+      sendSse(response, 'error', { error: validation.error })
+      response.end()
+      return
+    }
+
+    const prompt = buildAgentPrompt(validation.value)
+    const payload = buildDeepSeekPayload({
+      prompt,
+      model: config.deepseekModel,
+      temperature: validation.value.agent.temperature,
+      maxTokens: 900,
+    })
+
+    await streamProviderResponse(response, config, payload)
+  })
+
+  app.post('/api/moderator-summary', async (request, response) => {
+    prepareSse(response)
+
+    const validation = validateSummaryRequest(request.body)
+    if (!validation.ok) {
+      sendSse(response, 'error', { error: validation.error })
+      response.end()
+      return
+    }
+
+    const prompt = buildModeratorPrompt(validation.value)
+    const payload = buildDeepSeekPayload({
+      prompt,
+      model: config.deepseekModel,
+      temperature: 0.35,
+      maxTokens: 1100,
+    })
+
+    await streamProviderResponse(response, config, payload)
+  })
+
+  return app
+}
+
+async function streamProviderResponse(
+  response: Response,
+  config: ServerConfig,
+  payload: DeepSeekPayload,
+) {
+  if (!config.deepseekApiKey) {
+    sendSse(response, 'error', {
+      error: 'DeepSeek API key is not configured. Add DEEPSEEK_API_KEY to .env and restart npm run dev:all.',
+    })
+    response.end()
+    return
+  }
+
+  try {
+    for await (const event of streamDeepSeekChat({
+      apiKey: config.deepseekApiKey,
+      baseUrl: config.deepseekBaseUrl,
+      payload,
+    })) {
+      if (event.type === 'chunk') {
+        if (event.text) sendSse(response, 'chunk', { text: event.text })
+        if (event.usage) sendSse(response, 'usage', event.usage)
+      }
+      if (event.type === 'usage') {
+        sendSse(response, 'usage', event.usage)
+      }
+    }
+
+    sendSse(response, 'done', { ok: true })
+  } catch (error) {
+    sendSse(response, 'error', {
+      error: error instanceof Error ? error.message : 'DeepSeek request failed.',
+    })
+  } finally {
+    response.end()
+  }
+}
+
+function prepareSse(response: Response) {
+  response.status(200)
+  response.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+  response.setHeader('Cache-Control', 'no-cache, no-transform')
+  response.setHeader('Connection', 'keep-alive')
+  response.flushHeaders?.()
+}
+
+function sendSse(response: Response, event: string, data: unknown) {
+  response.write(`event: ${event}\n`)
+  response.write(`data: ${JSON.stringify(data)}\n\n`)
+}
+
+function validateTurnRequest(value: unknown): ValidationResult<ProviderTurnInput> {
+  if (!isRecord(value)) return invalid('Request body must be an object.')
+  if (value.provider !== 'deepseek') return invalid('Only the deepseek provider is supported.')
+  if (!isRecord(value.agent)) return invalid('Missing agent.')
+  if (!isRecord(value.config)) return invalid('Missing roundtable config.')
+  if (!Array.isArray(value.activeAgents)) return invalid('Missing active agents.')
+  if (!Array.isArray(value.previousMessages)) return invalid('Missing previous messages.')
+  if (typeof value.config.question !== 'string' || !value.config.question.trim()) {
+    return invalid('Question is required.')
+  }
+  if (typeof value.agent.systemPrompt !== 'string') return invalid('Agent system prompt is required.')
+
+  return {
+    ok: true as const,
+    value: {
+      agent: value.agent as unknown as ProviderTurnInput['agent'],
+      config: value.config as unknown as ProviderTurnInput['config'],
+      round: Number(value.round),
+      turnIndex: Number(value.turnIndex),
+      activeAgents: value.activeAgents as ProviderTurnInput['activeAgents'],
+      previousMessages: value.previousMessages as ProviderTurnInput['previousMessages'],
+    },
+  }
+}
+
+function validateSummaryRequest(value: unknown): ValidationResult<ProviderSummaryInput> {
+  if (!isRecord(value)) return invalid('Request body must be an object.')
+  if (value.provider !== 'deepseek') return invalid('Only the deepseek provider is supported.')
+  if (!isRecord(value.config)) return invalid('Missing roundtable config.')
+  if (!Array.isArray(value.activeAgents)) return invalid('Missing active agents.')
+  if (!Array.isArray(value.messages)) return invalid('Missing transcript messages.')
+  if (typeof value.config.question !== 'string' || !value.config.question.trim()) {
+    return invalid('Question is required.')
+  }
+
+  return {
+    ok: true as const,
+    value: {
+      config: value.config as unknown as ProviderSummaryInput['config'],
+      activeAgents: value.activeAgents as ProviderSummaryInput['activeAgents'],
+      messages: value.messages as ProviderSummaryInput['messages'],
+    },
+  }
+}
+
+function invalid(error: string) {
+  return { ok: false as const, error }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}

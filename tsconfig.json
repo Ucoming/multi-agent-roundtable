@@ -5,6 +5,7 @@
     "lib": ["ES2023", "DOM"],
     "jsx": "react-jsx",
     "types": ["vite/client", "vitest/globals"],
+    "esModuleInterop": true,
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
@@ -21,5 +22,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "server"]
 }
