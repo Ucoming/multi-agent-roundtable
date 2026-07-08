@@ -132,3 +132,4 @@ The Philosophy & Thinking topic also uses method-inspired archetypes rather than
 - 2026-07-08: Added browser-local session history with automatic save, restore, delete, and new discussion controls.
 - 2026-07-08: Upgraded history into a ChatGPT-style sidebar with search, visible saved discussions, current-session highlighting, and safe switching from a running discussion.
 - 2026-07-08: Redesigned the workspace into a cleaner left-history, center-discussion, right-controls layout, with agent editing embedded inside the controls panel.
+- 2026-07-08: Restyled the central roundtable scene into an isometric pixel-art room with wood floor texture, diamond table, colored chairs, and blocky speech cards.

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { MessageCircle, Radio } from 'lucide-react'
+import { Radio } from 'lucide-react'
 import { getSceneDefinition } from '../data/sceneCatalog'
 import type { AgentProfile, DiscussionMessage, RoundtableConfig } from '../types'
 
@@ -44,17 +44,14 @@ export function RoundtableScene({
         className={`roundtable-stage ${activeAgents.length > 6 ? 'many-agents' : ''}`}
         aria-label={`${scene.label} with agent speech bubbles`}
       >
-        <div className="room-backdrop" />
-        <div className="town-map" aria-hidden="true">
-          <div className="town-road road-main" />
-          <div className="town-road road-cross" />
-          <div className="town-block block-library" />
-          <div className="town-block block-cafe" />
-          <div className="town-block block-park" />
-          <div className="town-block block-lab" />
+        <div className="pixel-room-backdrop" aria-hidden="true" />
+        <div className="pixel-floor" aria-hidden="true">
+          <div className="pixel-chair chair-top-left" />
+          <div className="pixel-chair chair-top-right" />
+          <div className="pixel-chair chair-bottom-left" />
+          <div className="pixel-chair chair-bottom-right" />
         </div>
         <div className="table-surface">
-          <MessageCircle size={24} />
           <span>{activeAgents.length} agents</span>
         </div>
 
