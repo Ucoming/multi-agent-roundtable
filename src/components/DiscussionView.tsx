@@ -95,9 +95,14 @@ export function DiscussionView({
         ) : (
           messages.map((message) => {
             const agent = agentMap.get(message.agentId)
-            const quoted = message.quotedMessageId
-              ? messageMap.get(message.quotedMessageId)
-              : undefined
+            const referenceIds = message.referencedMessageIds?.length
+              ? message.referencedMessageIds
+              : message.quotedMessageId
+                ? [message.quotedMessageId]
+                : []
+            const referencedMessages = referenceIds
+              .map((referenceId) => messageMap.get(referenceId))
+              .filter((reference): reference is DiscussionMessage => Boolean(reference))
             const isUserMessage = message.speakerType === 'user'
 
             return (
@@ -119,11 +124,16 @@ export function DiscussionView({
                   </div>
                 </div>
 
-                {quoted ? (
-                  <blockquote>
-                    <span>Referencing {quoted.speakerName}</span>
-                    {quoted.content.slice(0, 180)}
-                  </blockquote>
+                {referencedMessages.length ? (
+                  <div className="reference-stack" aria-label="Table references">
+                    <div className="reference-stack-title">Responding to table</div>
+                    {referencedMessages.map((reference) => (
+                      <blockquote className="reference-item" key={reference.id}>
+                        <span>{reference.speakerName}</span>
+                        {compactReference(reference.content)}
+                      </blockquote>
+                    ))}
+                  </div>
                 ) : null}
 
                 <MarkdownContent className="message-content" content={message.content} />
@@ -157,6 +167,11 @@ export function DiscussionView({
       </article>
     </section>
   )
+}
+
+function compactReference(content: string) {
+  const compact = content.replace(/\s+/g, ' ').trim()
+  return compact.length > 180 ? `${compact.slice(0, 177)}...` : compact
 }
 
 function Metric({

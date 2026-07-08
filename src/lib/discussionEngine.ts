@@ -1,5 +1,6 @@
 import type {
   AgentProfile,
+  DiscussionBrief,
   DiscussionMessage,
   LlmProvider,
   ModeratorSummary,
@@ -62,6 +63,28 @@ export function createDiscussionPlan(agents: AgentProfile[], config: RoundtableC
   }))
 }
 
+export function createDiscussionBrief(
+  messages: DiscussionMessage[],
+  config: RoundtableConfig,
+  currentAgentId = '',
+): DiscussionBrief {
+  const visibleMessages = messages.filter((message) => message.content.trim())
+  const referencePoints = selectReferencePoints(visibleMessages, currentAgentId)
+  const speakerNames = [...new Set(visibleMessages.map((message) => message.speakerName))]
+  const latestUserInput = [...visibleMessages].reverse().find((message) => message.speakerType === 'user')
+
+  return {
+    tableState:
+      visibleMessages.length === 0
+        ? 'No one has spoken yet. Open the table by framing the shared question.'
+        : `${visibleMessages.length} contributions from ${speakerNames.join(', ')}. Respond to the whole table, not only the latest message.`,
+    commonGround: buildCommonGround(visibleMessages, config.question),
+    tensions: buildTensions(visibleMessages),
+    openQuestions: buildOpenQuestions(visibleMessages, latestUserInput),
+    referencePoints,
+  }
+}
+
 export async function runRoundtable(
   config: RoundtableConfig,
   agents: AgentProfile[],
@@ -85,7 +108,9 @@ export async function runRoundtable(
         }
       }
 
-      const quotedMessageId = messages.at(-1)?.id
+      const discussionBrief = createDiscussionBrief(messages, config, agent.id)
+      const referencedMessageIds = discussionBrief.referencePoints.map((point) => point.messageId)
+      const quotedMessageId = referencedMessageIds[0] ?? messages.at(-1)?.id
       const startedAt = new Date().toISOString()
       let draft: DiscussionMessage = {
         id: `round-${roundPlan.round}-${agent.id}-${startedAt}`,
@@ -97,6 +122,8 @@ export async function runRoundtable(
         speakingStyle: agent.speakingStyle,
         content: '',
         quotedMessageId,
+        referencedMessageIds,
+        discussionBrief,
         tokenEstimate: 0,
         costEstimate: 0,
         timestamp: startedAt,
@@ -113,6 +140,7 @@ export async function runRoundtable(
         turnIndex,
         activeAgents,
         previousMessages: messages,
+        discussionBrief,
       })) {
         if (callbacks.shouldStop?.()) break
 
@@ -170,7 +198,12 @@ async function streamSummary(
   callbacks.onSummaryStart?.(summary)
 
   const stream =
-    provider.streamSummary?.({ config, activeAgents, messages }) ??
+    provider.streamSummary?.({
+      config,
+      activeAgents,
+      messages,
+      discussionBrief: createDiscussionBrief(messages, config),
+    }) ??
     fallbackSummaryStream(config, activeAgents, messages)
 
   let usage: ProviderUsage | undefined
@@ -222,6 +255,78 @@ async function* fallbackSummaryStream(
 
 function normalizeProviderItem(item: ProviderStreamItem) {
   return typeof item === 'string' ? { type: 'chunk' as const, text: item } : item
+}
+
+function selectReferencePoints(messages: DiscussionMessage[], currentAgentId: string) {
+  const bySpeaker = new Map<string, DiscussionMessage>()
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message.agentId === currentAgentId) continue
+    if (!bySpeaker.has(message.speakerName)) {
+      bySpeaker.set(message.speakerName, message)
+    }
+    if (bySpeaker.size >= 4) break
+  }
+
+  return [...bySpeaker.values()]
+    .reverse()
+    .map((message) => ({
+      messageId: message.id,
+      speakerName: message.speakerName,
+      excerpt: excerpt(message.content, 150),
+    }))
+}
+
+function buildCommonGround(messages: DiscussionMessage[], question: string) {
+  if (messages.length === 0) {
+    return [`The table has not yet tested the question: ${excerpt(question, 140)}`]
+  }
+
+  return [
+    'Everyone is contributing to the same user question rather than separate mini-essays.',
+    'The next useful move is to compare perspectives and clarify what remains unresolved.',
+  ]
+}
+
+function buildTensions(messages: DiscussionMessage[]) {
+  if (messages.length < 2) {
+    return ['No table-level disagreement is visible yet.']
+  }
+
+  const first = messages[0]
+  const latest = messages.at(-1) ?? first
+  const prior = messages.length > 2 ? messages[messages.length - 2] : first
+
+  return [
+    `${prior.speakerName} may emphasize "${excerpt(prior.content, 82)}", while ${latest.speakerName} may shift the table toward "${excerpt(latest.content, 82)}".`,
+    `${first.speakerName}'s opening frame still needs to be tested against later objections and user input.`,
+  ]
+}
+
+function buildOpenQuestions(
+  messages: DiscussionMessage[],
+  latestUserInput: DiscussionMessage | undefined,
+) {
+  const questions = [
+    'Which prior view should be revised, not merely acknowledged?',
+    'What disagreement should remain open because the situation has no single clean answer?',
+  ]
+
+  if (latestUserInput) {
+    questions.unshift(`How does the user's added context change the table: "${excerpt(latestUserInput.content, 110)}"?`)
+  }
+
+  if (messages.length < 2) {
+    questions.unshift('What first disagreement or tension should the table create for useful reflection?')
+  }
+
+  return questions
+}
+
+function excerpt(content: string, maxLength: number) {
+  const compact = content.replace(/\s+/g, ' ').trim()
+  if (compact.length <= maxLength) return compact
+  return `${compact.slice(0, maxLength - 3)}...`
 }
 
 function appendUserInterjections(

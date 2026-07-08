@@ -1,6 +1,6 @@
 import cors from 'cors'
 import express, { type Response } from 'express'
-import type { ProviderSummaryInput, ProviderTurnInput } from '../src/types'
+import type { DiscussionBrief, ProviderSummaryInput, ProviderTurnInput } from '../src/types'
 import {
   buildDeepSeekPayload,
   streamDeepSeekChat,
@@ -147,6 +147,7 @@ function validateTurnRequest(value: unknown): ValidationResult<ProviderTurnInput
       turnIndex: Number(value.turnIndex),
       activeAgents: value.activeAgents as ProviderTurnInput['activeAgents'],
       previousMessages: value.previousMessages as ProviderTurnInput['previousMessages'],
+      discussionBrief: readDiscussionBrief(value.discussionBrief),
     },
   }
 }
@@ -167,8 +168,48 @@ function validateSummaryRequest(value: unknown): ValidationResult<ProviderSummar
       config: value.config as unknown as ProviderSummaryInput['config'],
       activeAgents: value.activeAgents as ProviderSummaryInput['activeAgents'],
       messages: value.messages as ProviderSummaryInput['messages'],
+      discussionBrief: readDiscussionBrief(value.discussionBrief),
     },
   }
+}
+
+function readDiscussionBrief(value: unknown): DiscussionBrief {
+  if (!isRecord(value)) return emptyDiscussionBrief()
+
+  return {
+    tableState: typeof value.tableState === 'string' ? value.tableState : emptyDiscussionBrief().tableState,
+    commonGround: readStringArray(value.commonGround),
+    tensions: readStringArray(value.tensions),
+    openQuestions: readStringArray(value.openQuestions),
+    referencePoints: Array.isArray(value.referencePoints)
+      ? value.referencePoints
+          .filter(isRecord)
+          .map((point) => ({
+            messageId: readStringField(point, 'messageId'),
+            speakerName: readStringField(point, 'speakerName'),
+            excerpt: readStringField(point, 'excerpt'),
+          }))
+          .filter((point) => point.messageId && point.speakerName)
+      : [],
+  }
+}
+
+function emptyDiscussionBrief(): DiscussionBrief {
+  return {
+    tableState: 'No shared table brief was provided. Use the visible transcript as the source of truth.',
+    commonGround: [],
+    tensions: [],
+    openQuestions: [],
+    referencePoints: [],
+  }
+}
+
+function readStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+function readStringField(value: Record<string, unknown>, key: string) {
+  return typeof value[key] === 'string' ? value[key] : ''
 }
 
 function invalid(error: string) {

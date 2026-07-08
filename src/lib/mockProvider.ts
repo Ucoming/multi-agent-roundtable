@@ -1,5 +1,5 @@
 import type {
-  DiscussionMessage,
+  DiscussionBriefPoint,
   LlmProvider,
   ProviderSummaryInput,
   ProviderTurnInput,
@@ -21,31 +21,34 @@ export function createMockProvider(options: MockProviderOptions = {}): LlmProvid
 }
 
 function buildTurnText(input: ProviderTurnInput) {
-  const lastMessage = input.previousMessages.at(-1)
+  const references = input.discussionBrief.referencePoints
   const isChinese = input.config.discussionLanguage === 'zh'
   const stance = chooseStance(input.turnIndex, input.round)
   const styleMove = styleDirective(input.agent.speakingStyle, isChinese)
   const modeMove = modeDirective(input.config.discussionMode, isChinese)
+  const openQuestion = input.discussionBrief.openQuestions[0]
 
   if (isChinese) {
-    const responseTarget = lastMessage
-      ? `回应 **${lastMessage.speakerName}**：> ${quoteFragment(lastMessage)}`
-      : `开启第 ${input.round} 轮：先把问题放在桌面上。`
+    const responseTarget = references.length
+      ? `回应全桌：${formatReferenceList(references, true)}`
+      : `开启第 ${input.round} 轮：先把共同问题放到桌面上。`
 
     return [
       `### ${input.agent.name}`,
       '',
       responseTarget,
       '',
-      `- **立场**：${lastMessage ? stance.zh : '先建立共同问题'}`,
+      `- **立场**：${references.length ? stance.zh : '先建立共同问题'}`,
+      `- **保留的共识**：${input.discussionBrief.commonGround[0]}`,
+      `- **我挑战的张力**：${input.discussionBrief.tensions[0]}`,
       `- **我的视角**：${styleMove}`,
-      `- **关键张力**：${modeMove}`,
-      `- **推进问题**：如果没有标准答案，我们此刻最需要分清的是“真实感受”“可验证事实”和“下一句可以怎么说”。`,
+      `- **推进方式**：${modeMove}`,
+      `- **留给桌面的下一问**：${openQuestion}`,
     ].join('\n')
   }
 
-  const responseTarget = lastMessage
-    ? `Responding to **${lastMessage.speakerName}**: > ${quoteFragment(lastMessage)}`
+  const responseTarget = references.length
+    ? `Responding to the table: ${formatReferenceList(references, false)}`
     : `Opening round ${input.round}: put the core question on the table.`
 
   return [
@@ -53,19 +56,22 @@ function buildTurnText(input: ProviderTurnInput) {
     '',
     responseTarget,
     '',
-    `- **Position**: ${lastMessage ? stance.en : 'Frame the shared question first'}`,
+    `- **Position**: ${references.length ? stance.en : 'Frame the shared question first'}`,
+    `- **Common ground I keep**: ${input.discussionBrief.commonGround[0]}`,
+    `- **Tension I challenge**: ${input.discussionBrief.tensions[0]}`,
     `- **Lens**: ${styleMove}`,
-    `- **Tension**: ${modeMove}`,
-    '- **Next move**: Since there may be no single right answer, separate feelings, observable facts, and the next sentence the user could actually say.',
+    `- **Discussion move**: ${modeMove}`,
+    `- **Next table question**: ${openQuestion}`,
   ].join('\n')
 }
 
 function buildSummaryText(input: ProviderSummaryInput) {
   const isChinese = input.config.discussionLanguage === 'zh'
   const messageCount = input.messages.length
-  const finalSpeaker = input.messages.at(-1)?.speakerName ?? 'the table'
   const activeNames = input.activeAgents.map((agent) => agent.name).join(', ')
   const decisionSentence = outputDirective(input.config.finalOutputType, isChinese)
+  const tensions = input.discussionBrief.tensions.join('；')
+  const openQuestions = input.discussionBrief.openQuestions.join('；')
 
   if (isChinese) {
     return [
@@ -74,10 +80,16 @@ function buildSummaryText(input: ProviderSummaryInput) {
       `本轮共有 **${messageCount}** 条发言，参与者包括：${activeNames}。`,
       '',
       '### 共同点',
-      '大家都认为这个问题不适合被压成一个简单答案，需要同时看见感受、事实、边界和可执行的沟通方式。',
+      '大家都把这个问题视为需要反复澄清的关系/情绪问题，而不是一个可以直接判分的标准答案题。',
       '',
       '### 仍然存在的分歧',
-      `最后由 **${finalSpeaker}** 交接，但桌面上仍保留不同解释：一部分视角更重视情绪确认，另一部分更重视边界和行动。`,
+      tensions || '桌面上还没有形成清晰分歧，需要继续追问事实、感受、边界和可执行沟通。',
+      '',
+      '### 多种可能解释',
+      '一种解释强调情绪确认和安全感，另一种解释强调边界、行动和可验证事实；两者可以同时保留。',
+      '',
+      '### 下一步',
+      openQuestions || '把最关键的不确定点转成一句可以对当事人说出口的话。',
       '',
       `### 输出形式\n${decisionSentence}`,
     ].join('\n')
@@ -92,7 +104,13 @@ function buildSummaryText(input: ProviderSummaryInput) {
     'The group treats this as an ambiguous human question rather than a puzzle with one correct answer.',
     '',
     '### Remaining Disagreement',
-    `${finalSpeaker} provided the final handoff, but the table still holds a real tension between emotional validation, boundary clarity, and action.`,
+    tensions || 'The table has not yet formed a strong disagreement, so the next round should separate facts, feelings, boundaries, and action.',
+    '',
+    '### Multiple Plausible Readings',
+    'One reading emphasizes emotional validation and safety; another emphasizes boundaries, action, and observable evidence.',
+    '',
+    '### Next Move',
+    openQuestions || 'Turn the most important uncertainty into one sentence the user could actually say.',
     '',
     `### Output\n${decisionSentence}`,
   ].join('\n')
@@ -109,21 +127,48 @@ async function* streamText(text: string, chunkDelayMs: number) {
   }
 }
 
-function quoteFragment(message: DiscussionMessage) {
-  const sentence = message.content.split('.').find(Boolean) ?? message.content
+function formatReferenceList(references: DiscussionBriefPoint[], isChinese: boolean) {
+  return references
+    .slice(0, 3)
+    .map((reference) =>
+      isChinese
+        ? `**${reference.speakerName}**「${quoteFragment(reference.excerpt)}」`
+        : `**${reference.speakerName}**: "${quoteFragment(reference.excerpt)}"`,
+    )
+    .join(isChinese ? '；' : '; ')
+}
+
+function quoteFragment(content: string) {
+  const sentence = content.split(/[.!?。！？]/).find(Boolean) ?? content
   return sentence.slice(0, 96)
 }
 
 function styleDirective(style: string, isChinese: boolean) {
   const directives: Record<string, string> = {
-    Brief: isChinese ? '我会压缩成少数关键取舍。' : 'I will keep the claim compact and force a short list of tradeoffs.',
-    Sharp: isChinese ? '我会温和但直接地挑战薄弱假设。' : 'I will pressure-test the weak assumption before adding new ideas.',
-    Encouraging: isChinese ? '我会保持建设性，同时要求具体证据。' : 'I will keep the group constructive while still asking for evidence.',
-    Rigorous: isChinese ? '我会区分机制、证据和不确定性。' : 'I will separate mechanism, evidence, and uncertainty.',
-    Visionary: isChinese ? '我会打开可能性，但不离开现实行动。' : 'I will widen the opportunity space without losing the path to a prototype.',
-    Pragmatic: isChinese ? '我会把洞察转成顺序、责任和限制。' : 'I will translate the idea into sequence, owner, and constraint.',
-    Reflective: isChinese ? '我会放慢速度，看见内在冲突。' : 'I will slow down the inner conflict and name what may be emotionally true.',
-    Warm: isChinese ? '我会先承接感受，再轻轻打开下一个问题。' : 'I will respond with care first, then gently open a next question.',
+    Brief: isChinese
+      ? '我会压缩成少数关键取舍，避免把讨论拖成散文。'
+      : 'I will keep the claim compact and force a short list of tradeoffs.',
+    Sharp: isChinese
+      ? '我会温和但直接地挑战薄弱假设。'
+      : 'I will pressure-test the weak assumption before adding new ideas.',
+    Encouraging: isChinese
+      ? '我会保持建设性，同时要求具体证据。'
+      : 'I will keep the group constructive while still asking for evidence.',
+    Rigorous: isChinese
+      ? '我会区分机制、证据和不确定性。'
+      : 'I will separate mechanism, evidence, and uncertainty.',
+    Visionary: isChinese
+      ? '我会打开可能性，但不离开现实行动。'
+      : 'I will widen the opportunity space without losing the path to a prototype.',
+    Pragmatic: isChinese
+      ? '我会把洞察转成顺序、责任和限制。'
+      : 'I will translate the idea into sequence, owner, and constraint.',
+    Reflective: isChinese
+      ? '我会放慢速度，看见内在冲突。'
+      : 'I will slow down the inner conflict and name what may be emotionally true.',
+    Warm: isChinese
+      ? '我会先承接感受，再轻轻打开下一个问题。'
+      : 'I will respond with care first, then gently open a next question.',
   }
   return directives[style] ?? directives.Pragmatic
 }
@@ -139,6 +184,9 @@ function modeDirective(mode: string, isChinese: boolean) {
     'conflict-mediation': isChinese
       ? '冲突调解要降低责备，找到双方需要和可修复的下一次对话。'
       : 'For conflict mediation, reduce blame, name each side needs, and identify one repairable next conversation.',
+    'dating-clarity': isChinese
+      ? '恋爱判断要同时看吸引、尊重、边界、互惠和操控风险。'
+      : 'For dating clarity, examine attraction, respect, boundaries, reciprocity, and manipulation risk together.',
     brainstorming: isChinese
       ? '头脑风暴只有在能沉淀实验时才有价值。'
       : 'For brainstorming, divergence is useful only if we capture the highest-value experiments.',

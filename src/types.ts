@@ -79,6 +79,8 @@ export interface DiscussionMessage {
   speakingStyle: SpeakingStyle
   content: string
   quotedMessageId?: string
+  referencedMessageIds?: string[]
+  discussionBrief?: DiscussionBrief
   tokenEstimate: number
   costEstimate: number
   timestamp: string
@@ -94,6 +96,20 @@ export interface ModeratorSummary {
 export interface CostSummary {
   totalTokens: number
   totalCost: number
+}
+
+export interface DiscussionBriefPoint {
+  messageId: string
+  speakerName: string
+  excerpt: string
+}
+
+export interface DiscussionBrief {
+  tableState: string
+  commonGround: string[]
+  tensions: string[]
+  openQuestions: string[]
+  referencePoints: DiscussionBriefPoint[]
 }
 
 export interface ProviderUsage {
@@ -119,12 +135,14 @@ export interface ProviderTurnInput {
   turnIndex: number
   activeAgents: AgentProfile[]
   previousMessages: DiscussionMessage[]
+  discussionBrief: DiscussionBrief
 }
 
 export interface ProviderSummaryInput {
   config: RoundtableConfig
   activeAgents: AgentProfile[]
   messages: DiscussionMessage[]
+  discussionBrief: DiscussionBrief
 }
 
 export interface LlmProvider {

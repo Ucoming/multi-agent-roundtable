@@ -1,5 +1,6 @@
 import type {
   AgentProfile,
+  DiscussionBrief,
   DiscussionMessage,
   ProviderSummaryInput,
   ProviderTurnInput,
@@ -13,7 +14,6 @@ export interface ChatPrompt {
 const maxTranscriptChars = 14000
 
 export function buildAgentPrompt(input: ProviderTurnInput): ChatPrompt {
-  const latestMessage = input.previousMessages.at(-1)
   const outputLanguage = languageName(input.config.discussionLanguage)
 
   return {
@@ -27,10 +27,11 @@ export function buildAgentPrompt(input: ProviderTurnInput): ChatPrompt {
       'Roundtable rules:',
       '- Speak only as this agent, not as the moderator.',
       '- Use the visible transcript as shared memory.',
+      '- Respond to the current table state, not only to the latest prior message.',
       '- Use Markdown for all visible output. Prefer short headings, bullets, and quoted fragments when useful.',
-      '- Explicitly build on, challenge, or refine at least one prior point when prior messages exist.',
+      '- Explicitly build on, challenge, or refine multiple prior points when multiple prior speakers exist.',
       '- Do not write an isolated essay. Treat the prior transcript as a live discussion.',
-      '- When there are prior messages, name the speaker you are responding to and state one of: Agree, Disagree, or Partly agree.',
+      '- When there are prior messages, name the speakers you are responding to and state one of: Agree, Disagree, or Partly agree.',
       '- It is acceptable for the final table to preserve unresolved disagreement when the human question has no single right answer.',
       '- Keep the turn concise, concrete, and useful for the selected final artifact.',
       '- Do not invent tool results, private API state, or hidden messages.',
@@ -48,14 +49,14 @@ export function buildAgentPrompt(input: ProviderTurnInput): ChatPrompt {
       'Active agents:',
       formatAgentList(input.activeAgents),
       '',
-      'Latest prior message:',
-      latestMessage ? formatMessage(latestMessage) : 'No prior message. Open the discussion.',
+      'Current table brief:',
+      formatDiscussionBrief(input.discussionBrief),
       '',
       'Visible transcript:',
       formatTranscript(input.previousMessages),
       '',
       'Required discussion move:',
-      buildTurnMove(input, latestMessage),
+      buildTurnMove(input),
       '',
       'Write the next contribution for your agent in Markdown. Keep it under 180 words.',
     ].join('\n'),
@@ -82,6 +83,9 @@ export function buildModeratorPrompt(input: ProviderSummaryInput): ChatPrompt {
       '',
       'Participants:',
       formatAgentList(input.activeAgents),
+      '',
+      'Final table brief:',
+      formatDiscussionBrief(input.discussionBrief),
       '',
       'Full visible transcript:',
       formatTranscript(input.messages),
@@ -128,19 +132,61 @@ function formatMessage(message: DiscussionMessage) {
   ].join('\n')
 }
 
-function buildTurnMove(input: ProviderTurnInput, latestMessage: DiscussionMessage | undefined) {
-  if (!latestMessage) {
+function formatDiscussionBrief(brief: DiscussionBrief) {
+  return [
+    `Table state: ${brief.tableState}`,
+    '',
+    'Common ground:',
+    formatBullets(brief.commonGround),
+    '',
+    'Tensions to test:',
+    formatBullets(brief.tensions),
+    '',
+    'Open questions:',
+    formatBullets(brief.openQuestions),
+    '',
+    'Reference points to consider:',
+    brief.referencePoints.length
+      ? brief.referencePoints
+          .map((point) => `- ${point.speakerName}: ${point.excerpt} [${point.messageId}]`)
+          .join('\n')
+      : '- None yet.',
+  ].join('\n')
+}
+
+function formatBullets(items: string[]) {
+  return items.length ? items.map((item) => `- ${item}`).join('\n') : '- None.'
+}
+
+function buildTurnMove(input: ProviderTurnInput) {
+  if (input.previousMessages.length === 0) {
     return 'Open the discussion by naming the emotional or practical question the table must not avoid.'
   }
 
+  const referencedSpeakers = [
+    ...new Set(input.discussionBrief.referencePoints.map((point) => point.speakerName)),
+  ]
+  const speakerList = referencedSpeakers.join(', ')
+  const multiReferenceRule =
+    input.discussionBrief.referencePoints.length >= 2
+      ? 'Address at least two prior speakers or two distinct table positions before adding your own view.'
+      : 'Address the prior table position before adding your own view.'
+
   if (input.round > 1 && input.turnIndex === 0) {
-    return 'Start this round by identifying the strongest unresolved tension from the prior round, then add your position.'
+    return [
+      'Start this round from the table brief, not from the last sentence alone.',
+      multiReferenceRule,
+      `Prior speakers available: ${speakerList || 'none yet'}.`,
+      'Identify the strongest unresolved tension from the prior round, then add your position.',
+    ].join(' ')
   }
 
   return [
-    `Respond directly to ${latestMessage.speakerName}.`,
+    'Respond to the whole table brief rather than a single handoff.',
+    multiReferenceRule,
+    `Prior speakers available: ${speakerList || 'none yet'}.`,
     'State Agree, Disagree, or Partly agree.',
-    'Explain the specific point of agreement or disagreement.',
+    'Explain what you keep from the table, what you challenge, and what remains unresolved.',
     'Add one new lens, question, boundary, or repair step that moves the discussion forward.',
   ].join(' ')
 }

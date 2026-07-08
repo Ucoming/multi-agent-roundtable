@@ -2,7 +2,12 @@ import { createAgentsFromTemplate, defaultConfig, templateLabels } from '../data
 import { createDiscussionPlan, getSpeakingSequence, runRoundtable } from './discussionEngine'
 import { createJsonExport, createMarkdownExport } from './exports'
 import { createMockProvider } from './mockProvider'
-import type { DiscussionMessage, LlmProvider, RoundtableTemplate } from '../types'
+import type {
+  DiscussionBrief,
+  DiscussionMessage,
+  LlmProvider,
+  RoundtableTemplate,
+} from '../types'
 
 const templates = Object.keys(templateLabels) as RoundtableTemplate[]
 
@@ -87,6 +92,43 @@ describe('roundtable run', () => {
       'You',
       agents[1].name,
     ])
+  })
+
+  it('routes the whole table brief into later agent turns', async () => {
+    const agents = createAgentsFromTemplate('relationship-reflection').slice(0, 3)
+    const seenBriefs: DiscussionBrief[] = []
+    const provider: LlmProvider = {
+      id: 'table-brief-capture',
+      label: 'Table Brief Capture',
+      streamTurn: async function* (input) {
+        seenBriefs.push(input.discussionBrief)
+        const speakers = input.discussionBrief.referencePoints
+          .map((point) => point.speakerName)
+          .join(', ')
+        yield `${input.agent.name} responds to ${speakers || 'the opening question'}.`
+      },
+      streamSummary: async function* () {
+        yield 'Moderator summary.'
+      },
+    }
+
+    const result = await runRoundtable(
+      { ...defaultConfig, roundCount: 1, speakingOrder: 'fixed' },
+      agents,
+      provider,
+    )
+
+    expect(seenBriefs[0].referencePoints).toHaveLength(0)
+    expect(seenBriefs[2].referencePoints.map((point) => point.speakerName)).toEqual([
+      agents[0].name,
+      agents[1].name,
+    ])
+    expect(result.messages[2].referencedMessageIds).toEqual([
+      result.messages[0].id,
+      result.messages[1].id,
+    ])
+    expect(result.messages[2].content).toContain(agents[0].name)
+    expect(result.messages[2].content).toContain(agents[1].name)
   })
 })
 

@@ -2,6 +2,7 @@ import type { RoundtableExportState } from '../types'
 
 export function createMarkdownExport(state: RoundtableExportState) {
   const enabledAgents = state.agents.filter((agent) => agent.enabled)
+  const messageMap = new Map(state.messages.map((message) => [message.id, message]))
   const agentRows = enabledAgents
     .map(
       (agent) =>
@@ -11,11 +12,20 @@ export function createMarkdownExport(state: RoundtableExportState) {
 
   const transcript = state.messages
     .map((message) => {
-      const quoteLine = message.quotedMessageId
-        ? `\n> References previous message: ${message.quotedMessageId}\n`
+      const referenceIds = message.referencedMessageIds?.length
+        ? message.referencedMessageIds
+        : message.quotedMessageId
+          ? [message.quotedMessageId]
+          : []
+      const referenceLine = referenceIds.length
+        ? `\n> Responding to table: ${referenceIds
+            .map((referenceId) => messageMap.get(referenceId))
+            .filter(Boolean)
+            .map((reference) => `${reference?.speakerName}: ${compactExportReference(reference?.content ?? '')}`)
+            .join(' | ')}\n`
         : ''
       const label = message.speakerType === 'user' ? 'User input' : `Round ${message.round}`
-      return `### ${label}: ${message.speakerName}\n${quoteLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${message.costEstimate.toFixed(4)}`
+      return `### ${label}: ${message.speakerName}\n${referenceLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${message.costEstimate.toFixed(4)}`
     })
     .join('\n\n')
 
@@ -122,4 +132,9 @@ function downloadTextFile(filename: string, content: string, type: string) {
   link.download = filename
   link.click()
   URL.revokeObjectURL(url)
+}
+
+function compactExportReference(content: string) {
+  const compact = content.replace(/\s+/g, ' ').trim()
+  return compact.length > 120 ? `${compact.slice(0, 117)}...` : compact
 }
