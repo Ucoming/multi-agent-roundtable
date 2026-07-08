@@ -90,6 +90,17 @@ The relationship and emotional templates are designed for reflection, perspectiv
 
 The first preset agent library is inspired by public communication and therapy-adjacent frameworks such as Nonviolent Communication, CBT-style thought-feeling-behavior mapping, relationship conflict management, and attachment-informed emotion work. Presets are method-oriented personas, not impersonations of real experts.
 
+## Agent Design Research
+
+The richer relationship agents are built as method-inspired archetypes rather than celebrity or expert impersonations:
+
+- Attachment and EFT-style work inspired `Attachment Radar`, which watches pursue-withdraw cycles, reassurance seeking, distancing, and secure alternatives.
+- Gottman-style repair attempts and bids for connection inspired `Repair Attempt Coach`, which drafts softer starts and small repair lines.
+- Esther Perel's work on intimacy, desire, aliveness, distance, and security inspired `Desire Distance Reader`.
+- Imago dialogue inspired `Imago Mirror`, which mirrors, validates, and empathizes before judging.
+- Five Love Languages inspired `Love Language Interpreter`, but the app treats it as a conversational heuristic rather than hard science.
+- Chinese internet relationship-advice culture, including Lu Qi, Leng Ai, Mystery Method / pickup coaching, and paid recovery-consulting ecosystems, inspired two guarded agents: `Ethical Dating Coach` extracts only consent-based social confidence, while `PUA Risk Auditor` flags manipulation, coercion, false urgency, and paid-consulting traps.
+
 ## Completion Log
 
 - 2026-07-07: Implemented the initial GitHub Pages-ready Multi-Agent Roundtable app with mock streaming, editable agents, three themes, local PNG assets, Markdown/JSON/PDF export, tests, and deployment workflow.
@@ -98,3 +109,4 @@ The first preset agent library is inspired by public communication and therapy-a
 - 2026-07-08: Upgraded the app to local full-stack DeepSeek live mode with Express SSE endpoints, provider mode switching, safe `.env` secrets, prompt/payload tests, and retained mock fallback.
 - 2026-07-08: Reoriented the default experience toward relationship and emotional reflection, added relationship-specific templates and preset agents, and added live user interjections that route into later agent turns.
 - 2026-07-08: Added safe Markdown rendering, a Chinese/English discussion language selector, and a stronger disagreement-aware deliberation protocol for agent turns and moderator summaries.
+- 2026-07-08: Expanded the default relationship agent design using public relationship frameworks and Chinese internet relationship-advice archetypes, adding more distinctive agents plus a Dating Clarity template and PUA/manipulation risk guardrails.
