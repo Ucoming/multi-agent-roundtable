@@ -1,4 +1,5 @@
 import { Minus, Plus, RefreshCw, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { agentPresetLibrary, type AgentPresetId } from '../data/templates'
 import type { AgentProfile, ModelLabel, SpeakingStyle } from '../types'
 
 const modelOptions: ModelLabel[] = ['GPT-5.5', 'Claude', 'DeepSeek', 'Gemini', 'Ollama']
@@ -9,6 +10,8 @@ const styleOptions: SpeakingStyle[] = [
   'Rigorous',
   'Visionary',
   'Pragmatic',
+  'Reflective',
+  'Warm',
 ]
 
 interface AgentRosterProps {
@@ -17,6 +20,7 @@ interface AgentRosterProps {
   maxAgents: number
   minAgents: number
   onAddAgent(): void
+  onAddPresetAgent(presetId: AgentPresetId): void
   onAgentChange(id: string, patch: Partial<AgentProfile>): void
   onRemoveAgent(id: string): void
   onRemoveLastAgent(): void
@@ -29,6 +33,7 @@ export function AgentRoster({
   maxAgents,
   minAgents,
   onAddAgent,
+  onAddPresetAgent,
   onAgentChange,
   onRemoveAgent,
   onRemoveLastAgent,
@@ -61,7 +66,7 @@ export function AgentRoster({
         <div className="agent-count-label">
           <SlidersHorizontal size={16} />
           <span>
-            {agents.length} total · {enabledCount} enabled
+            {agents.length} total | {enabledCount} enabled
           </span>
         </div>
         <div className="agent-count-actions" aria-label="Agent count controls">
@@ -85,6 +90,26 @@ export function AgentRoster({
           </button>
         </div>
       </div>
+
+      <label className="field preset-adder">
+        <span>Add preset perspective</span>
+        <select
+          value=""
+          disabled={!canAdd}
+          aria-label="Add preset agent"
+          onChange={(event) => {
+            const presetId = event.target.value as AgentPresetId
+            if (presetId) onAddPresetAgent(presetId)
+          }}
+        >
+          <option value="">Choose a relationship agent...</option>
+          {agentPresetLibrary.map((preset) => (
+            <option value={preset.id} key={preset.id}>
+              {preset.shortLabel}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div className="agent-list">
         {agents.map((agent) => (

@@ -14,7 +14,8 @@ export function createMarkdownExport(state: RoundtableExportState) {
       const quoteLine = message.quotedMessageId
         ? `\n> References previous message: ${message.quotedMessageId}\n`
         : ''
-      return `### Round ${message.round}: ${message.speakerName}\n${quoteLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${message.costEstimate.toFixed(4)}`
+      const label = message.speakerType === 'user' ? 'User input' : `Round ${message.round}`
+      return `### ${label}: ${message.speakerName}\n${quoteLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${message.costEstimate.toFixed(4)}`
     })
     .join('\n\n')
 
@@ -29,6 +30,7 @@ ${state.config.question}
 ## Configuration
 
 - Template: ${state.config.template}
+- Provider: ${state.config.providerMode}
 - Discussion mode: ${state.config.discussionMode}
 - Rounds: ${state.config.roundCount}
 - Speaking order: ${state.config.speakingOrder}
@@ -103,7 +105,8 @@ export async function downloadPdf(state: RoundtableExportState) {
   write('Transcript', 14, 18)
 
   for (const message of state.messages) {
-    write(`Round ${message.round} - ${message.speakerName} (${message.model})`, 12, 16)
+    const label = message.speakerType === 'user' ? 'User input' : `Round ${message.round}`
+    write(`${label} - ${message.speakerName} (${message.model})`, 12, 16)
     write(message.content)
   }
 

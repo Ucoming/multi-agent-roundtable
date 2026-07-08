@@ -1,4 +1,5 @@
-import { Bot, Clock3, Coins, MessageSquare, Sparkles } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { Bot, Clock3, Coins, MessageSquare, Send, Sparkles } from 'lucide-react'
 import { RoundtableScene } from './RoundtableScene'
 import type {
   AgentProfile,
@@ -15,6 +16,7 @@ interface DiscussionViewProps {
   error: string
   isRunning: boolean
   messages: DiscussionMessage[]
+  onUserInterjection(content: string): void
   summary: ModeratorSummary
 }
 
@@ -25,10 +27,21 @@ export function DiscussionView({
   error,
   isRunning,
   messages,
+  onUserInterjection,
   summary,
 }: DiscussionViewProps) {
+  const [interjection, setInterjection] = useState('')
   const agentMap = new Map(agents.map((agent) => [agent.id, agent]))
   const messageMap = new Map(messages.map((message) => [message.id, message]))
+  const canSubmitInterjection = isRunning && interjection.trim().length > 0
+
+  function submitInterjection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!canSubmitInterjection) return
+
+    onUserInterjection(interjection)
+    setInterjection('')
+  }
 
   return (
     <section className="discussion-panel" aria-label="Discussion transcript">
@@ -45,6 +58,27 @@ export function DiscussionView({
       </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
+
+      <form className="interjection-box" onSubmit={submitInterjection}>
+        <label className="field">
+          <span>Join the discussion</span>
+          <textarea
+            value={interjection}
+            rows={3}
+            disabled={!isRunning}
+            placeholder={
+              isRunning
+                ? 'Add new context, correct an assumption, or ask the agents to consider another angle.'
+                : 'Start a discussion to add live context.'
+            }
+            onChange={(event) => setInterjection(event.target.value)}
+          />
+        </label>
+        <button type="submit" disabled={!canSubmitInterjection}>
+          <Send size={16} />
+          Add to table
+        </button>
+      </form>
 
       <div className="transcript">
         {messages.length === 0 ? (
@@ -63,11 +97,19 @@ export function DiscussionView({
             const quoted = message.quotedMessageId
               ? messageMap.get(message.quotedMessageId)
               : undefined
+            const isUserMessage = message.speakerType === 'user'
 
             return (
-              <article className="message-card" key={message.id}>
+              <article
+                className={`message-card ${isUserMessage ? 'user-message-card' : ''}`}
+                key={message.id}
+              >
                 <div className="message-meta">
-                  <img src={agent?.avatarUrl} alt="" className="message-avatar" />
+                  {isUserMessage ? (
+                    <div className="message-avatar user-avatar">You</div>
+                  ) : (
+                    <img src={agent?.avatarUrl} alt="" className="message-avatar" />
+                  )}
                   <div>
                     <h3>{message.speakerName}</h3>
                     <p>

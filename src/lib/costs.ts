@@ -6,6 +6,7 @@ const costPerThousandTokens: Record<ModelLabel, number> = {
   DeepSeek: 0.004,
   Gemini: 0.006,
   Ollama: 0,
+  User: 0,
 }
 
 export function estimateTokens(text: string) {

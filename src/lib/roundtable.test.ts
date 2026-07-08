@@ -1,15 +1,10 @@
-import { createAgentsFromTemplate, defaultConfig } from '../data/templates'
+import { createAgentsFromTemplate, defaultConfig, templateLabels } from '../data/templates'
 import { createDiscussionPlan, getSpeakingSequence, runRoundtable } from './discussionEngine'
 import { createJsonExport, createMarkdownExport } from './exports'
 import { createMockProvider } from './mockProvider'
-import type { RoundtableTemplate } from '../types'
+import type { DiscussionMessage, LlmProvider, RoundtableTemplate } from '../types'
 
-const templates: RoundtableTemplate[] = [
-  'brainstorming',
-  'debate',
-  'peer-review',
-  'investment-committee',
-]
+const templates = Object.keys(templateLabels) as RoundtableTemplate[]
 
 describe('roundtable templates', () => {
   it('creates 3 to 5 enabled agents for every template', () => {
@@ -56,6 +51,43 @@ describe('roundtable run', () => {
     expect(result.summary.content).toContain('Moderator summary')
     expect(result.costSummary.totalTokens).toBeGreaterThan(0)
   })
+
+  it('routes a user interjection into later agent turns', async () => {
+    const agents = createAgentsFromTemplate('relationship-reflection').slice(0, 2)
+    const seenInputs: string[][] = []
+    let consumeCalls = 0
+    const provider: LlmProvider = {
+      id: 'capture-provider',
+      label: 'Capture Provider',
+      streamTurn: async function* (input) {
+        seenInputs.push(input.previousMessages.map((message) => message.speakerName))
+        yield `${input.agent.name} heard the room.`
+      },
+      streamSummary: async function* () {
+        yield 'Moderator summary.'
+      },
+    }
+
+    const result = await runRoundtable(
+      { ...defaultConfig, roundCount: 1, speakingOrder: 'fixed' },
+      agents,
+      provider,
+      {
+        consumeUserInterjections: () => {
+          consumeCalls += 1
+          return consumeCalls === 2 ? [createUserMessage('Please also consider my fear.')] : []
+        },
+      },
+    )
+
+    expect(seenInputs[0]).toEqual([])
+    expect(seenInputs[1]).toContain('You')
+    expect(result.messages.map((message) => message.speakerName)).toEqual([
+      agents[0].name,
+      'You',
+      agents[1].name,
+    ])
+  })
 })
 
 describe('exports', () => {
@@ -86,3 +118,20 @@ describe('exports', () => {
     expect(json).toContain(result.summary.content)
   })
 })
+
+function createUserMessage(content: string): DiscussionMessage {
+  return {
+    id: 'user-test-note',
+    round: 1,
+    agentId: 'user',
+    speakerType: 'user',
+    speakerName: 'You',
+    role: 'User context',
+    model: 'User',
+    speakingStyle: 'Reflective',
+    content,
+    tokenEstimate: 5,
+    costEstimate: 0,
+    timestamp: '2026-07-08T00:00:00.000Z',
+  }
+}

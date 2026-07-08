@@ -19,6 +19,7 @@ export interface RoundtableRunCallbacks {
   onSummaryChunk?(summary: ModeratorSummary, chunk: string): void
   onSummaryComplete?(summary: ModeratorSummary): void
   shouldStop?(): boolean
+  consumeUserInterjections?(): DiscussionMessage[]
 }
 
 export function getEnabledAgents(agents: AgentProfile[]) {
@@ -73,6 +74,8 @@ export async function runRoundtable(
 
   for (const roundPlan of plan) {
     for (const [turnIndex, agent] of roundPlan.agents.entries()) {
+      appendUserInterjections(messages, callbacks)
+
       if (callbacks.shouldStop?.()) {
         const partialSummary = createEmptySummary()
         return {
@@ -147,6 +150,7 @@ export async function runRoundtable(
     }
   }
 
+  appendUserInterjections(messages, callbacks)
   const summary = await streamSummary(config, activeAgents, messages, provider, callbacks)
   return {
     messages,
@@ -218,6 +222,21 @@ async function* fallbackSummaryStream(
 
 function normalizeProviderItem(item: ProviderStreamItem) {
   return typeof item === 'string' ? { type: 'chunk' as const, text: item } : item
+}
+
+function appendUserInterjections(
+  messages: DiscussionMessage[],
+  callbacks: RoundtableRunCallbacks,
+) {
+  const interjections = callbacks.consumeUserInterjections?.() ?? []
+  const existingIds = new Set(messages.map((message) => message.id))
+
+  for (const message of interjections) {
+    if (!existingIds.has(message.id)) {
+      messages.push(message)
+      existingIds.add(message.id)
+    }
+  }
 }
 
 function deterministicScore(input: string) {

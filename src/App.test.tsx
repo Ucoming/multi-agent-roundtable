@@ -16,10 +16,16 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Future Lab' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Add agent'))
+    expect(screen.getByText(/6 total/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Remove last agent'))
     expect(screen.getByText(/5 total/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Remove last agent'))
-    expect(screen.getByText(/4 total/i)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Add preset agent'), {
+      target: { value: 'cbt-reframer' },
+    })
+    expect(screen.getByDisplayValue('CBT Reframer')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 

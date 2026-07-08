@@ -1,6 +1,6 @@
 # Multi-Agent Roundtable
 
-Multi-Agent Roundtable is a local-first React and Express app for structured multi-agent discussions. A user enters a question, chooses a discussion template, gets 3-5 generated agents, runs a multi-round discussion, receives a moderator summary, and exports the session as Markdown, JSON, or PDF.
+Multi-Agent Roundtable is a local-first React and Express app for structured multi-agent discussions, especially for ambiguous relationship, emotional, and interpersonal questions where there may be no single correct answer. A user enters a question, chooses a discussion template, gets 3-5 generated agents, runs a multi-round discussion, receives a moderator summary, and exports the session as Markdown, JSON, or PDF.
 
 The app keeps a mock provider for static demos, and now supports DeepSeek live mode through a local backend. API keys stay in `.env` and are never sent to the browser.
 
@@ -8,7 +8,9 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 
 - Three-pane product layout: editable agents, live discussion transcript, and session controls.
 - Agent fields: name, role, system prompt, model label, temperature, speaking style, and enabled toggle.
-- Templates: Brainstorming, Debate, Peer Review, and Investment Committee.
+- Templates: Relationship Reflection, Emotional Clarity, Conflict Mediation, Brainstorming, Debate, Peer Review, and Investment Committee.
+- Relationship agent library with preset perspectives such as Empathic Listener, Rational Analyst, NVC Needs Translator, Boundary Coach, Attachment Lens, CBT Reframer, and Repair Planner.
+- Live user interjections during a running discussion; later agents receive the added context in the shared transcript.
 - Speaking orders: fixed, deterministic random, and moderator-called.
 - Themes: Warm Family, Work Mode, and Tech Vision, with generated local PNG assets.
 - Provider modes: Mock demo and DeepSeek live through the local Express API.
@@ -77,9 +79,16 @@ The frontend uses the `LlmProvider` interface. `createMockProvider` streams dete
 
 The group-chat model is sequential: one API call per speaking agent, each later agent receives the visible transcript so far, and the moderator receives the final transcript.
 
+## Relationship Reflection Boundary
+
+The relationship and emotional templates are designed for reflection, perspective-taking, and communication planning. They are not therapy, diagnosis, legal advice, or emergency support. If a transcript suggests self-harm, abuse, coercion, or immediate danger, agents are instructed to prioritize real-world safety and recommend trusted human or emergency support.
+
+The first preset agent library is inspired by public communication and therapy-adjacent frameworks such as Nonviolent Communication, CBT-style thought-feeling-behavior mapping, relationship conflict management, and attachment-informed emotion work. Presets are method-oriented personas, not impersonations of real experts.
+
 ## Completion Log
 
 - 2026-07-07: Implemented the initial GitHub Pages-ready Multi-Agent Roundtable app with mock streaming, editable agents, three themes, local PNG assets, Markdown/JSON/PDF export, tests, and deployment workflow.
 - 2026-07-07: Added selectable visual discussion scenes with a roundtable stage, per-agent speech bubbles, active/last speaker status, mobile-first scene ordering, and export metadata for the selected scene.
 - 2026-07-07: Refined the roundtable scene toward a Stanford small-town style with map tiles, roads, small buildings, and a central plaza table; added visible agent count controls for adding, removing, and deleting agents.
 - 2026-07-08: Upgraded the app to local full-stack DeepSeek live mode with Express SSE endpoints, provider mode switching, safe `.env` secrets, prompt/payload tests, and retained mock fallback.
+- 2026-07-08: Reoriented the default experience toward relationship and emotional reflection, added relationship-specific templates and preset agents, and added live user interjections that route into later agent turns.

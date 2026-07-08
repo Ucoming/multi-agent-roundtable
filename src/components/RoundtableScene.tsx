@@ -40,7 +40,10 @@ export function RoundtableScene({
         </div>
       </div>
 
-      <div className="roundtable-stage" aria-label={`${scene.label} with agent speech bubbles`}>
+      <div
+        className={`roundtable-stage ${activeAgents.length > 6 ? 'many-agents' : ''}`}
+        aria-label={`${scene.label} with agent speech bubbles`}
+      >
         <div className="room-backdrop" />
         <div className="town-map" aria-hidden="true">
           <div className="town-road road-main" />
@@ -111,8 +114,8 @@ function speakerStatus(name: string, isRunning: boolean) {
 }
 
 function getSeatPosition(index: number, count: number) {
-  const radiusX = count <= 3 ? 28 : 30
-  const radiusY = count <= 3 ? 27 : 32
+  const radiusX = count <= 3 ? 28 : count > 6 ? 36 : 30
+  const radiusY = count <= 3 ? 27 : count > 6 ? 35 : 32
   const angle = -90 + (360 / count) * index
   const radians = (angle * Math.PI) / 180
 

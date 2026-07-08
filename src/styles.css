@@ -369,6 +369,15 @@ textarea:disabled {
   box-shadow: 0 0 0 1px var(--border);
 }
 
+.user-avatar {
+  display: grid;
+  place-items: center;
+  color: var(--surface);
+  background: var(--accent-two);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .switch-label {
   display: inline-flex;
   align-items: center;
@@ -699,6 +708,10 @@ textarea:disabled {
   transform: translate(-50%, -50%);
 }
 
+.roundtable-stage.many-agents .scene-seat {
+  width: 148px;
+}
+
 .scene-agent {
   width: fit-content;
   max-width: 100%;
@@ -727,6 +740,16 @@ textarea:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.roundtable-stage.many-agents .scene-agent strong,
+.roundtable-stage.many-agents .scene-agent span {
+  max-width: 72px;
+}
+
+.roundtable-stage.many-agents .speech-bubble {
+  min-height: 50px;
+  font-size: 11px;
 }
 
 .scene-agent strong {
@@ -835,6 +858,40 @@ textarea:disabled {
   font-weight: 700;
 }
 
+.interjection-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin: 12px 16px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.interjection-box .field {
+  margin-bottom: 0;
+}
+
+.interjection-box textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.interjection-box button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: var(--surface);
+  background: var(--accent);
+  font-weight: 760;
+}
+
 .transcript {
   display: grid;
   gap: 12px;
@@ -874,6 +931,11 @@ textarea:disabled {
   border-radius: 8px;
   padding: 14px;
   background: var(--surface);
+}
+
+.user-message-card {
+  border-color: color-mix(in srgb, var(--accent-two) 58%, var(--border));
+  background: color-mix(in srgb, var(--accent-two) 10%, var(--surface));
 }
 
 .message-meta {
@@ -1128,7 +1190,8 @@ blockquote span {
   .metrics-row,
   .agent-grid,
   .control-grid,
-  .primary-actions {
+  .primary-actions,
+  .interjection-box {
     grid-template-columns: 1fr;
   }
 

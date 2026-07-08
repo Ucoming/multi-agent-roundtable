@@ -28,6 +28,8 @@ export function buildAgentPrompt(input: ProviderTurnInput): ChatPrompt {
       '- Explicitly build on, challenge, or refine at least one prior point when prior messages exist.',
       '- Keep the turn concise, concrete, and useful for the selected final artifact.',
       '- Do not invent tool results, private API state, or hidden messages.',
+      '- This is reflective support, not professional therapy, diagnosis, legal advice, or emergency help.',
+      '- If the transcript suggests self-harm, abuse, coercion, or immediate danger, prioritize safety and recommend trusted human or emergency support.',
     ].join('\n'),
     user: [
       `Original user question: ${input.config.question}`,
@@ -56,6 +58,7 @@ export function buildModeratorPrompt(input: ProviderSummaryInput): ChatPrompt {
       'You are the moderator of a multi-agent roundtable.',
       'Your job is to synthesize the discussion into the requested final artifact.',
       'Do not add new unsupported claims. Preserve useful disagreements and open risks.',
+      'This product supports reflection on ambiguous human questions. It must not diagnose, prescribe treatment, or replace professional help.',
     ].join('\n'),
     user: [
       `Original user question: ${input.config.question}`,
@@ -98,8 +101,9 @@ function formatAgentList(agents: AgentProfile[]) {
 }
 
 function formatMessage(message: DiscussionMessage) {
+  const speakerType = message.speakerType === 'user' ? 'user live input' : 'agent'
   return [
-    `${message.speakerName} | round ${message.round} | role: ${message.role}`,
+    `${message.speakerName} | ${speakerType} | round ${message.round} | role: ${message.role}`,
     message.content,
   ].join('\n')
 }

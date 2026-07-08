@@ -69,12 +69,20 @@ function styleDirective(style: string) {
     Rigorous: 'I will separate mechanism, evidence, and uncertainty.',
     Visionary: 'I will widen the opportunity space without losing the path to a prototype.',
     Pragmatic: 'I will translate the idea into sequence, owner, and constraint.',
+    Reflective: 'I will slow down the inner conflict and name what may be emotionally true.',
+    Warm: 'I will respond with care first, then gently open a next question.',
   }
   return directives[style] ?? directives.Pragmatic
 }
 
 function modeDirective(mode: string) {
   const directives: Record<string, string> = {
+    'relationship-reflection':
+      'For relationship reflection, there may be no single correct answer, so the table should clarify feelings, needs, boundaries, and possible words.',
+    'emotional-clarity':
+      'For emotional clarity, the table should map thoughts, feelings, needs, and patterns before recommending action.',
+    'conflict-mediation':
+      'For conflict mediation, the table should reduce blame, name each side needs, and identify one repairable next conversation.',
     brainstorming: 'For brainstorming, divergence is useful only if we capture the highest-value experiments.',
     debate: 'For debate, the burden of proof should be explicit and revisable.',
     'peer-review':
@@ -88,6 +96,8 @@ function modeDirective(mode: string) {
 function outputDirective(outputType: string) {
   const directives: Record<string, string> = {
     summary: 'Recommended output: a concise summary with the main agreement, tension, and unresolved evidence.',
+    reflection:
+      'Recommended output: reflection notes with emotional themes, possible interpretations, useful questions, and a gentle next step.',
     decision: 'Recommended output: a decision with conditions, confidence, and the evidence that could reverse it.',
     'action-list':
       'Recommended output: an action list with owners, next checks, and the earliest useful review point.',

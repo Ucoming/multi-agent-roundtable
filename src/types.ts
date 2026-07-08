@@ -1,4 +1,4 @@
-export type ModelLabel = 'GPT-5.5' | 'Claude' | 'DeepSeek' | 'Gemini' | 'Ollama'
+export type ModelLabel = 'GPT-5.5' | 'Claude' | 'DeepSeek' | 'Gemini' | 'Ollama' | 'User'
 
 export type SpeakingStyle =
   | 'Brief'
@@ -7,8 +7,13 @@ export type SpeakingStyle =
   | 'Rigorous'
   | 'Visionary'
   | 'Pragmatic'
+  | 'Reflective'
+  | 'Warm'
 
 export type RoundtableTemplate =
+  | 'relationship-reflection'
+  | 'emotional-clarity'
+  | 'conflict-mediation'
   | 'brainstorming'
   | 'debate'
   | 'peer-review'
@@ -17,12 +22,15 @@ export type RoundtableTemplate =
 export type SpeakingOrder = 'fixed' | 'random' | 'moderator'
 
 export type DiscussionMode =
+  | 'relationship-reflection'
+  | 'emotional-clarity'
+  | 'conflict-mediation'
   | 'brainstorming'
   | 'debate'
   | 'peer-review'
   | 'investment-committee'
 
-export type FinalOutputType = 'summary' | 'decision' | 'action-list' | 'report'
+export type FinalOutputType = 'summary' | 'reflection' | 'decision' | 'action-list' | 'report'
 
 export type ThemeId = 'warm-family' | 'work-mode' | 'tech-vision'
 
@@ -59,6 +67,7 @@ export interface DiscussionMessage {
   id: string
   round: number
   agentId: string
+  speakerType?: 'agent' | 'user'
   speakerName: string
   role: string
   model: ModelLabel

@@ -5,12 +5,14 @@ import { ControlPanel } from './components/ControlPanel'
 import { DiscussionView } from './components/DiscussionView'
 import { themeCatalog } from './data/themeCatalog'
 import {
+  createAgentFromPreset,
   createAgentsFromTemplate,
   defaultConfig,
   getThemedAvatarUrl,
+  type AgentPresetId,
 } from './data/templates'
 import { downloadJson, downloadMarkdown, downloadPdf } from './lib/exports'
-import { summarizeCosts } from './lib/costs'
+import { estimateTokens, summarizeCosts } from './lib/costs'
 import { runRoundtable } from './lib/discussionEngine'
 import { createMockProvider } from './lib/mockProvider'
 import { createServerProvider } from './lib/serverProvider'
@@ -26,7 +28,7 @@ import type {
 
 const mockChunkDelayMs = import.meta.env.MODE === 'test' ? 0 : 18
 const minAgents = 1
-const maxAgents = 6
+const maxAgents = 8
 
 const customAgentAvatars = [
   './assets/avatar-scout.png',
@@ -49,6 +51,7 @@ export function App() {
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState('')
   const stopRef = useRef(false)
+  const interjectionQueueRef = useRef<RoundtableExportState['messages']>([])
 
   const provider = useMemo(
     () =>
@@ -113,6 +116,13 @@ export function App() {
     })
   }
 
+  function addPresetAgent(presetId: AgentPresetId) {
+    setAgents((current) => {
+      if (current.length >= maxAgents) return current
+      return [...current, createAgentFromPreset(presetId, current.length + 1, config.theme)]
+    })
+  }
+
   function removeAgent(id: string) {
     setAgents((current) => {
       if (current.length <= minAgents) return current
@@ -146,6 +156,7 @@ export function App() {
     setSummary(createBlankSummary())
     setIsRunning(true)
     stopRef.current = false
+    interjectionQueueRef.current = []
 
     try {
       const result = await runRoundtable(config, agents, provider, {
@@ -172,6 +183,11 @@ export function App() {
           setSummary(nextSummary)
         },
         shouldStop: () => stopRef.current,
+        consumeUserInterjections: () => {
+          const queued = interjectionQueueRef.current
+          interjectionQueueRef.current = []
+          return queued
+        },
       })
 
       setMessages(result.messages)
@@ -187,6 +203,15 @@ export function App() {
     stopRef.current = true
   }
 
+  function addUserInterjection(content: string) {
+    const trimmed = content.trim()
+    if (!trimmed || !isRunning) return
+
+    const message = createUserInterjection(trimmed, messages.at(-1)?.round ?? 1)
+    interjectionQueueRef.current = [...interjectionQueueRef.current, message]
+    setMessages((current) => [...current, message])
+  }
+
   return (
     <main className={`app-shell theme-${config.theme}`}>
       <header className="topbar">
@@ -196,7 +221,7 @@ export function App() {
           </div>
           <div>
             <p className="eyebrow">Multi-Agent Roundtable</p>
-            <h1>Structured discussions that end in a usable artifact.</h1>
+            <h1>Reflect on relationship questions with multiple caring perspectives.</h1>
           </div>
         </div>
 
@@ -224,6 +249,7 @@ export function App() {
           maxAgents={maxAgents}
           minAgents={minAgents}
           onAddAgent={addAgent}
+          onAddPresetAgent={addPresetAgent}
           onAgentChange={updateAgent}
           onRemoveAgent={removeAgent}
           onRemoveLastAgent={removeLastAgent}
@@ -236,6 +262,7 @@ export function App() {
           error={error}
           isRunning={isRunning}
           messages={messages}
+          onUserInterjection={addUserInterjection}
           summary={summary}
         />
         <ControlPanel
@@ -266,15 +293,33 @@ function createBlankSummary(): ModeratorSummary {
   }
 }
 
+function createUserInterjection(content: string, round: number): RoundtableExportState['messages'][number] {
+  const tokenEstimate = estimateTokens(content)
+  return {
+    id: `user-interjection-${Date.now()}`,
+    round,
+    agentId: 'user',
+    speakerType: 'user',
+    speakerName: 'You',
+    role: 'User context and live intervention',
+    model: 'User',
+    speakingStyle: 'Reflective',
+    content,
+    tokenEstimate,
+    costEstimate: 0,
+    timestamp: new Date().toISOString(),
+  }
+}
+
 function createCustomAgent(index: number, theme: ThemeId): AgentProfile {
   const avatar = customAgentAvatars[(index - 1) % customAgentAvatars.length]
   return {
     id: `custom-agent-${Date.now()}-${index}`,
     name: `Custom Agent ${index}`,
-    role: 'Adds a new perspective to the table.',
+    role: 'Adds a new reflective perspective to the table.',
     systemPrompt:
-      'You contribute a distinct perspective, respond to the prior speaker, and keep the discussion moving toward a usable conclusion.',
-    model: 'GPT-5.5',
+      'You contribute a distinct perspective on the relationship or emotional question, respond to the prior speaker, and help the user think without pretending there is one perfect answer.',
+    model: 'DeepSeek',
     temperature: 0.55,
     speakingStyle: 'Pragmatic',
     enabled: true,
