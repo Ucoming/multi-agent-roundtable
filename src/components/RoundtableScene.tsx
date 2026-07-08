@@ -16,6 +16,13 @@ type SeatStyle = CSSProperties & {
   '--seat-accent': string
 }
 
+type ChairStyle = CSSProperties & {
+  '--chair-x': string
+  '--chair-y': string
+  '--seat-angle': string
+  '--seat-accent': string
+}
+
 export function RoundtableScene({
   agents,
   config,
@@ -44,15 +51,29 @@ export function RoundtableScene({
         className={`roundtable-stage ${activeAgents.length > 6 ? 'many-agents' : ''}`}
         aria-label={`${scene.label} with agent speech bubbles`}
       >
-        <div className="pixel-room-backdrop" aria-hidden="true" />
-        <div className="pixel-floor" aria-hidden="true">
-          <div className="pixel-chair chair-top-left" />
-          <div className="pixel-chair chair-top-right" />
-          <div className="pixel-chair chair-bottom-left" />
-          <div className="pixel-chair chair-bottom-right" />
-        </div>
+        <div className="painted-room-backdrop" aria-hidden="true" />
+        <div className="painted-floor" aria-hidden="true" />
+        {activeAgents.map((agent, index) => {
+          const position = getSeatPosition(index, activeAgents.length)
+
+          return (
+            <div
+              aria-hidden="true"
+              className={`stage-chair chair-${position.zone}`}
+              key={`${agent.id}-chair`}
+              style={
+                {
+                  '--chair-x': `${position.chairX}%`,
+                  '--chair-y': `${position.chairY}%`,
+                  '--seat-angle': `${position.angle}deg`,
+                  '--seat-accent': agent.accentColor,
+                } as ChairStyle
+              }
+            />
+          )
+        })}
         <div className="table-surface">
-          <span>{activeAgents.length} agents</span>
+          <span>{activeAgents.length} voices</span>
         </div>
 
         {activeAgents.map((agent, index) => {
@@ -62,7 +83,7 @@ export function RoundtableScene({
 
           return (
             <article
-              className={`scene-seat ${isActive ? 'is-speaking' : ''}`}
+              className={`scene-seat is-${position.zone} ${isActive ? 'is-speaking' : ''}`}
               key={agent.id}
               style={
                 {
@@ -83,7 +104,7 @@ export function RoundtableScene({
               <div className="speech-bubble">
                 {latestForAgent
                   ? compactSpeech(latestForAgent.content)
-                  : `Ready as ${agent.role.toLowerCase()}`}
+                  : `Ready with a ${agent.speakingStyle.toLowerCase()} lens.`}
               </div>
             </article>
           )
@@ -103,7 +124,7 @@ function findLatestMessage(agentId: string, messages: DiscussionMessage[]) {
 function compactSpeech(content: string) {
   const trimmed = content.trim()
   if (!trimmed) return 'Thinking through the next point...'
-  return trimmed.length > 124 ? `${trimmed.slice(0, 121)}...` : trimmed
+  return trimmed.length > 96 ? `${trimmed.slice(0, 93)}...` : trimmed
 }
 
 function speakerStatus(name: string, isRunning: boolean) {
@@ -111,13 +132,21 @@ function speakerStatus(name: string, isRunning: boolean) {
 }
 
 function getSeatPosition(index: number, count: number) {
-  const radiusX = count <= 3 ? 28 : count > 6 ? 36 : 30
-  const radiusY = count <= 3 ? 27 : count > 6 ? 35 : 32
+  const radiusX = count <= 3 ? 27 : count > 6 ? 34 : 31
+  const radiusY = count <= 3 ? 25 : count > 6 ? 31 : 29
   const angle = -90 + (360 / count) * index
   const radians = (angle * Math.PI) / 180
+  const x = 50 + Math.cos(radians) * radiusX
+  const y = 51 + Math.sin(radians) * radiusY
+  const chairRadiusX = Math.max(18, radiusX - 6)
+  const chairRadiusY = Math.max(16, radiusY - 5)
 
   return {
-    x: 50 + Math.cos(radians) * radiusX,
-    y: 51 + Math.sin(radians) * radiusY,
+    angle,
+    chairX: 50 + Math.cos(radians) * chairRadiusX,
+    chairY: 51 + Math.sin(radians) * chairRadiusY,
+    x,
+    y,
+    zone: y > 52 ? 'bottom' : 'top',
   }
 }
