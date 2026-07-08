@@ -14,7 +14,7 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Philosophy agent library with method-inspired lenses such as Contradiction & Practice Lens, Socratic Questioner, Stoic Examiner, Existential Mirror, Daoist Balance Reader, Material Conditions Lens, and Ethics Referee.
 - Optional pre-roundtable needs clarifier that guides the user through 3 short rounds before turning unclear feelings into a roundtable-ready question and context summary.
 - Live user interjections during a running discussion; later agents receive the added context in the shared transcript.
-- Browser-local conversation history with auto-save, restore, delete, and new discussion controls.
+- ChatGPT-style right-side conversation history with browser-local auto-save, search, restore, delete, and new discussion controls.
 - Safe GFM Markdown rendering for agent messages and moderator summaries, including lists, tables, quotes, inline code, and code blocks.
 - Discussion language control for Chinese or English model output.
 - Whole-table discussion brief for every turn, including common ground, tensions, open questions, and multiple prior reference points.
@@ -26,7 +26,7 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Provider modes: Mock demo and DeepSeek live through the local Express API.
 - Token and cost tracking, preferring real provider usage when available.
 - Exports: Markdown, JSON, and client-side PDF.
-- Tests for template generation, speaking order, moderator summary, exports, local session history, and App-level interaction paths.
+- Tests for template generation, speaking order, moderator summary, exports, local session history, running-session switching, and App-level interaction paths.
 
 ## Tech Stack
 
@@ -130,3 +130,4 @@ The Philosophy & Thinking topic also uses method-inspired archetypes rather than
 - 2026-07-08: Added the pre-roundtable needs clarifier with 3-stage guided chat, mock and DeepSeek SSE providers, context handoff into roundtable prompts, and export support.
 - 2026-07-08: Replaced the top-right visual style selector with a topic-space selector and added Philosophy & Thinking mode with philosophy-specific agents, prompt rules, theme, assets, and tests.
 - 2026-07-08: Added browser-local session history with automatic save, restore, delete, and new discussion controls.
+- 2026-07-08: Upgraded history into a ChatGPT-style right sidebar with search, visible saved discussions, current-session highlighting, and safe switching from a running discussion.

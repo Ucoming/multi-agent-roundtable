@@ -54,6 +54,10 @@ describe('App', () => {
   it('auto-saves a completed discussion and restores it from history', async () => {
     render(<App />)
 
+    expect(
+      screen.getByRole('heading', { name: /conversation history/i }),
+    ).toBeInTheDocument()
+
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 
     expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
@@ -76,6 +80,73 @@ describe('App', () => {
 
     expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
+  })
+
+  it('searches and deletes saved discussions from the sidebar', async () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
+    expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText(/1 saved discussions/i)).toBeInTheDocument())
+
+    fireEvent.change(screen.getByLabelText('Search conversation history'), {
+      target: { value: 'relationship' },
+    })
+    expect(screen.getAllByRole('button', { name: /^open /i })).toHaveLength(1)
+
+    fireEvent.change(screen.getByLabelText('Search conversation history'), {
+      target: { value: 'not-a-real-session' },
+    })
+    expect(screen.getByText(/No saved discussions match this search/i)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Search conversation history'), {
+      target: { value: '' },
+    })
+    fireEvent.click(screen.getAllByRole('button', { name: /^delete /i })[0])
+    await waitFor(() => expect(screen.getByText(/0 of 0 saved discussions/i)).toBeInTheDocument())
+  })
+
+  it('stops a running live discussion before switching to a saved history item', async () => {
+    const originalFetch = globalThis.fetch
+    const encoder = new TextEncoder()
+    let streamController: ReadableStreamDefaultController<Uint8Array> | undefined
+
+    globalThis.fetch = vi.fn(async () => {
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          streamController = controller
+          controller.enqueue(encoder.encode('event: chunk\ndata: {"text":"Slow live turn"}\n\n'))
+        },
+      })
+
+      return new Response(stream, {
+        headers: { 'Content-Type': 'text/event-stream' },
+      })
+    }) as typeof fetch
+
+    try {
+      render(<App />)
+
+      fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
+      expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(/1 saved discussions/i)).toBeInTheDocument())
+
+      const savedQuestion = (screen.getByLabelText('Question') as HTMLTextAreaElement).value
+      fireEvent.click(screen.getByRole('button', { name: /^new$/i }))
+      fireEvent.change(screen.getByLabelText('Provider mode'), {
+        target: { value: 'deepseek' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
+
+      expect(await screen.findAllByText(/Slow live turn/i)).not.toHaveLength(0)
+      fireEvent.click(screen.getAllByRole('button', { name: /^open /i })[0])
+      streamController?.close()
+
+      expect(await screen.findByDisplayValue(savedQuestion)).toBeInTheDocument()
+      expect(screen.getByText(/Theory Link/i)).toBeInTheDocument()
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 
   it('shows a live mode error returned by the local API', async () => {

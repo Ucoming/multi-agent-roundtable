@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { AgentRoster } from './components/AgentRoster'
+import {
+  ConversationHistorySidebar,
+  type SessionSaveState,
+} from './components/ConversationHistorySidebar'
 import { ControlPanel } from './components/ControlPanel'
 import { DiscussionView } from './components/DiscussionView'
 import { NeedsGuidePanel } from './components/NeedsGuidePanel'
-import {
-  SessionHistoryPanel,
-  type SessionSaveState,
-} from './components/SessionHistoryPanel'
 import { getTopicDefinition, topicCatalog } from './data/topicCatalog'
 import {
   createAgentFromPreset,
@@ -72,6 +72,7 @@ export function App() {
   const [saveState, setSaveState] = useState<SessionSaveState>('idle')
   const stopRef = useRef(false)
   const interjectionQueueRef = useRef<RoundtableExportState['messages']>([])
+  const pendingSessionSwitchRef = useRef<string | undefined>(undefined)
   const saveTimerRef = useRef<number | undefined>(undefined)
 
   const provider = useMemo(
@@ -242,7 +243,9 @@ export function App() {
       return
     }
 
-    const session = createSessionMeta(config, 'running')
+    const runConfig = config
+    const runAgents = agents
+    const session = createSessionMeta(runConfig, 'running')
     const blankSummary = createBlankSummary()
 
     setError('')
@@ -256,9 +259,12 @@ export function App() {
     interjectionQueueRef.current = []
 
     let finalStatus: SessionStatus = 'completed'
+    let finalMessages: RoundtableExportState['messages'] = []
+    let finalSummary = blankSummary
+    let finalError = ''
 
     try {
-      const result = await runRoundtable(config, agents, provider, {
+      const result = await runRoundtable(runConfig, runAgents, provider, {
         onMessageStart: (message) => {
           setMessages((current) => [...current, message])
         },
@@ -291,17 +297,39 @@ export function App() {
 
       setMessages(result.messages)
       setSummary(result.summary)
+      finalMessages = result.messages
+      finalSummary = result.summary
       finalStatus = stopRef.current ? 'stopped' : 'completed'
     } catch (runError) {
       finalStatus = 'error'
-      setError(runError instanceof Error ? runError.message : 'The roundtable failed to run.')
+      finalError = runError instanceof Error ? runError.message : 'The roundtable failed to run.'
+      setError(finalError)
     } finally {
-      setCurrentSession((current) =>
-        current?.id === session.id
-          ? { ...current, status: finalStatus, updatedAt: new Date().toISOString() }
-          : current,
-      )
+      const completedSession = {
+        ...session,
+        status: finalStatus,
+        updatedAt: new Date().toISOString(),
+      }
+      setCurrentSession((current) => (current?.id === session.id ? completedSession : current))
       setIsRunning(false)
+
+      const pendingSessionId = pendingSessionSwitchRef.current
+      if (pendingSessionId) {
+        pendingSessionSwitchRef.current = undefined
+        await saveSession(
+          createSessionSnapshot({
+            session: completedSession,
+            config: runConfig,
+            agents: runAgents,
+            messages: finalMessages,
+            summary: finalSummary,
+            costSummary: summarizeCosts(finalMessages, finalSummary),
+            error: finalError,
+          }),
+        )
+        await refreshSessions()
+        await openSessionSnapshot(pendingSessionId)
+      }
     }
   }
 
@@ -319,8 +347,17 @@ export function App() {
   }
 
   async function loadSessionSnapshot(sessionId: string) {
-    if (isRunning) return
+    if (isRunning) {
+      pendingSessionSwitchRef.current = sessionId
+      stopRef.current = true
+      setSaveState('saving')
+      return
+    }
 
+    await openSessionSnapshot(sessionId)
+  }
+
+  async function openSessionSnapshot(sessionId: string) {
     const snapshot = await getSession(sessionId)
     if (!snapshot) {
       setError('That saved discussion could not be found.')
@@ -378,6 +415,7 @@ export function App() {
     setAutosaveEnabled(false)
     setSaveState('idle')
     interjectionQueueRef.current = []
+    pendingSessionSwitchRef.current = undefined
   }
 
   return (
@@ -394,10 +432,6 @@ export function App() {
         </div>
 
         <div className="topbar-actions">
-          <a className="history-shortcut" href="#conversation-history">
-            History / 对话历史
-          </a>
-
           <label className="theme-switcher">
             <span>Topic</span>
             <select
@@ -430,52 +464,52 @@ export function App() {
           onRemoveLastAgent={removeLastAgent}
           onResetAgents={regenerateAgents}
         />
-        <DiscussionView
-          agents={agents}
-          config={config}
-          costSummary={costSummary}
-          error={error}
+        <div className="main-column">
+          <DiscussionView
+            agents={agents}
+            config={config}
+            costSummary={costSummary}
+            error={error}
+            isRunning={isRunning}
+            messages={messages}
+            onUserInterjection={addUserInterjection}
+            summary={summary}
+          />
+          <ControlPanel
+            config={config}
+            canExport={messages.length > 0 || Boolean(summary.content)}
+            isRunning={isRunning}
+            onConfigChange={updateConfig}
+            onProviderModeChange={updateProviderMode}
+            onTemplateChange={updateTemplate}
+            onRun={startDiscussion}
+            onStop={stopDiscussion}
+            onRegenerateAgents={regenerateAgents}
+            onExportMarkdown={() => downloadMarkdown(exportState)}
+            onExportJson={() => downloadJson(exportState)}
+            onExportPdf={() => downloadPdf(exportState)}
+            needsGuideSlot={
+              <NeedsGuidePanel
+                config={config}
+                disabled={isRunning}
+                provider={provider}
+                onApply={(question, context) => {
+                  updateConfig({ question, preDiscussionContext: context })
+                  setError('')
+                }}
+                onError={setError}
+              />
+            }
+          />
+        </div>
+        <ConversationHistorySidebar
+          currentSessionId={currentSession?.id}
           isRunning={isRunning}
-          messages={messages}
-          onUserInterjection={addUserInterjection}
-          summary={summary}
-        />
-        <ControlPanel
-          config={config}
-          canExport={messages.length > 0 || Boolean(summary.content)}
-          isRunning={isRunning}
-          onConfigChange={updateConfig}
-          onProviderModeChange={updateProviderMode}
-          onTemplateChange={updateTemplate}
-          onRun={startDiscussion}
-          onStop={stopDiscussion}
-          onRegenerateAgents={regenerateAgents}
-          onExportMarkdown={() => downloadMarkdown(exportState)}
-          onExportJson={() => downloadJson(exportState)}
-          onExportPdf={() => downloadPdf(exportState)}
-          historySlot={
-            <SessionHistoryPanel
-              currentSessionId={currentSession?.id}
-              disabled={isRunning}
-              saveState={saveState}
-              sessions={sessions}
-              onDeleteSession={deleteSessionSnapshot}
-              onLoadSession={loadSessionSnapshot}
-              onNewDiscussion={createNewDiscussion}
-            />
-          }
-          needsGuideSlot={
-            <NeedsGuidePanel
-              config={config}
-              disabled={isRunning}
-              provider={provider}
-              onApply={(question, context) => {
-                updateConfig({ question, preDiscussionContext: context })
-                setError('')
-              }}
-              onError={setError}
-            />
-          }
+          saveState={saveState}
+          sessions={sessions}
+          onDeleteSession={deleteSessionSnapshot}
+          onLoadSession={loadSessionSnapshot}
+          onNewDiscussion={createNewDiscussion}
         />
       </div>
     </main>
