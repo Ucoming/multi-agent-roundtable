@@ -253,15 +253,9 @@ textarea:disabled {
   max-width: 1680px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(270px, 320px) minmax(460px, 1fr) minmax(290px, 360px);
+  grid-template-columns: minmax(250px, 300px) minmax(520px, 1fr) minmax(340px, 390px);
   gap: 16px;
   align-items: start;
-}
-
-.main-column {
-  min-width: 0;
-  display: grid;
-  gap: 16px;
 }
 
 .panel,
@@ -559,6 +553,7 @@ textarea:disabled {
   display: grid;
   gap: 12px;
   align-content: start;
+  order: 0;
 }
 
 .conversation-sidebar-header {
@@ -1524,29 +1519,58 @@ blockquote span {
   gap: 12px;
 }
 
-.main-column .control-panel {
-  position: static;
-  max-height: none;
-  overflow: visible;
-}
-
-.setup-summary {
-  cursor: pointer;
-  list-style: none;
-  margin-bottom: 0;
-}
-
-.setup-summary::-webkit-details-marker {
-  display: none;
-}
-
-.setup-panel[open] .setup-summary {
-  margin-bottom: 12px;
-}
-
 .control-panel-body {
   display: grid;
   gap: 12px;
+}
+
+.control-section {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.control-section-title h3,
+.control-section-summary h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.control-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.control-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.control-section-body {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-roster-embed .agent-list {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.agent-roster-embed .agent-card {
+  padding: 10px;
+}
+
+.agent-roster-embed .agent-avatar {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
 }
 
 .primary-actions {
@@ -1601,18 +1625,26 @@ blockquote span {
 
 @media (max-width: 1180px) {
   .workspace {
-    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 370px);
   }
 
   .conversation-sidebar {
     grid-column: 1 / -1;
-    order: -1;
+    order: 0;
     position: static;
     max-height: none;
   }
 
   .conversation-list {
     max-height: 300px;
+  }
+
+  .discussion-panel {
+    order: 1;
+  }
+
+  .control-panel {
+    order: 2;
   }
 }
 
@@ -1660,25 +1692,22 @@ blockquote span {
     overflow-x: hidden;
   }
 
-  .agent-panel {
-    order: 1;
+  .conversation-sidebar {
+    order: 0;
   }
 
-  .main-column {
-    order: 2;
+  .conversation-list {
+    max-height: 280px;
   }
 
   .discussion-panel {
     min-height: auto;
     overflow-x: hidden;
+    order: 1;
   }
 
-  .conversation-sidebar {
-    order: -1;
-  }
-
-  .conversation-list {
-    max-height: 280px;
+  .control-panel {
+    order: 2;
   }
 
   .scene-heading {

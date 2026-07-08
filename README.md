@@ -6,7 +6,7 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 
 ## Features
 
-- Three-pane product layout: editable agents, live discussion transcript, and session controls.
+- Three-pane product layout: conversation history on the left, live discussion transcript in the center, and controls on the right.
 - Agent fields: name, role, system prompt, model label, temperature, speaking style, and enabled toggle.
 - Topic spaces: Relationships & Feelings, and Philosophy & Thinking.
 - Templates: Relationship Reflection, Emotional Clarity, Conflict Mediation, Dating Clarity, Philosophy Reflection, Brainstorming, Debate, Peer Review, and Investment Committee.
@@ -130,4 +130,5 @@ The Philosophy & Thinking topic also uses method-inspired archetypes rather than
 - 2026-07-08: Added the pre-roundtable needs clarifier with 3-stage guided chat, mock and DeepSeek SSE providers, context handoff into roundtable prompts, and export support.
 - 2026-07-08: Replaced the top-right visual style selector with a topic-space selector and added Philosophy & Thinking mode with philosophy-specific agents, prompt rules, theme, assets, and tests.
 - 2026-07-08: Added browser-local session history with automatic save, restore, delete, and new discussion controls.
-- 2026-07-08: Upgraded history into a ChatGPT-style right sidebar with search, visible saved discussions, current-session highlighting, and safe switching from a running discussion.
+- 2026-07-08: Upgraded history into a ChatGPT-style sidebar with search, visible saved discussions, current-session highlighting, and safe switching from a running discussion.
+- 2026-07-08: Redesigned the workspace into a cleaner left-history, center-discussion, right-controls layout, with agent editing embedded inside the controls panel.

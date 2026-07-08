@@ -451,57 +451,6 @@ export function App() {
       </header>
 
       <div className="workspace">
-        <AgentRoster
-          agents={agents}
-          disabled={isRunning}
-          maxAgents={maxAgents}
-          minAgents={minAgents}
-          topicSpace={config.topicSpace}
-          onAddAgent={addAgent}
-          onAddPresetAgent={addPresetAgent}
-          onAgentChange={updateAgent}
-          onRemoveAgent={removeAgent}
-          onRemoveLastAgent={removeLastAgent}
-          onResetAgents={regenerateAgents}
-        />
-        <div className="main-column">
-          <DiscussionView
-            agents={agents}
-            config={config}
-            costSummary={costSummary}
-            error={error}
-            isRunning={isRunning}
-            messages={messages}
-            onUserInterjection={addUserInterjection}
-            summary={summary}
-          />
-          <ControlPanel
-            config={config}
-            canExport={messages.length > 0 || Boolean(summary.content)}
-            isRunning={isRunning}
-            onConfigChange={updateConfig}
-            onProviderModeChange={updateProviderMode}
-            onTemplateChange={updateTemplate}
-            onRun={startDiscussion}
-            onStop={stopDiscussion}
-            onRegenerateAgents={regenerateAgents}
-            onExportMarkdown={() => downloadMarkdown(exportState)}
-            onExportJson={() => downloadJson(exportState)}
-            onExportPdf={() => downloadPdf(exportState)}
-            needsGuideSlot={
-              <NeedsGuidePanel
-                config={config}
-                disabled={isRunning}
-                provider={provider}
-                onApply={(question, context) => {
-                  updateConfig({ question, preDiscussionContext: context })
-                  setError('')
-                }}
-                onError={setError}
-              />
-            }
-          />
-        </div>
         <ConversationHistorySidebar
           currentSessionId={currentSession?.id}
           isRunning={isRunning}
@@ -510,6 +459,57 @@ export function App() {
           onDeleteSession={deleteSessionSnapshot}
           onLoadSession={loadSessionSnapshot}
           onNewDiscussion={createNewDiscussion}
+        />
+        <DiscussionView
+          agents={agents}
+          config={config}
+          costSummary={costSummary}
+          error={error}
+          isRunning={isRunning}
+          messages={messages}
+          onUserInterjection={addUserInterjection}
+          summary={summary}
+        />
+        <ControlPanel
+          config={config}
+          canExport={messages.length > 0 || Boolean(summary.content)}
+          isRunning={isRunning}
+          onConfigChange={updateConfig}
+          onProviderModeChange={updateProviderMode}
+          onTemplateChange={updateTemplate}
+          onRun={startDiscussion}
+          onStop={stopDiscussion}
+          onExportMarkdown={() => downloadMarkdown(exportState)}
+          onExportJson={() => downloadJson(exportState)}
+          onExportPdf={() => downloadPdf(exportState)}
+          agentRosterSlot={
+            <AgentRoster
+              embedded
+              agents={agents}
+              disabled={isRunning}
+              maxAgents={maxAgents}
+              minAgents={minAgents}
+              topicSpace={config.topicSpace}
+              onAddAgent={addAgent}
+              onAddPresetAgent={addPresetAgent}
+              onAgentChange={updateAgent}
+              onRemoveAgent={removeAgent}
+              onRemoveLastAgent={removeLastAgent}
+              onResetAgents={regenerateAgents}
+            />
+          }
+          needsGuideSlot={
+            <NeedsGuidePanel
+              config={config}
+              disabled={isRunning}
+              provider={provider}
+              onApply={(question, context) => {
+                updateConfig({ question, preDiscussionContext: context })
+                setError('')
+              }}
+              onError={setError}
+            />
+          }
         />
       </div>
     </main>

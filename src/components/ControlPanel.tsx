@@ -4,7 +4,6 @@ import {
   FileJson,
   FileText,
   Play,
-  RefreshCw,
   Square,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -34,10 +33,10 @@ interface ControlPanelProps {
   onTemplateChange(template: RoundtableTemplate): void
   onRun(): void
   onStop(): void
-  onRegenerateAgents(): void
   onExportMarkdown(): void
   onExportJson(): void
   onExportPdf(): void
+  agentRosterSlot?: ReactNode
   needsGuideSlot?: ReactNode
 }
 
@@ -58,86 +57,126 @@ export function ControlPanel({
   onTemplateChange,
   onRun,
   onStop,
-  onRegenerateAgents,
   onExportMarkdown,
   onExportJson,
   onExportPdf,
+  agentRosterSlot,
   needsGuideSlot,
 }: ControlPanelProps) {
   return (
-    <details className="panel control-panel setup-panel" open>
-      <summary className="panel-header setup-summary">
+    <aside className="panel control-panel" aria-label="Roundtable controls">
+      <div className="panel-header">
         <div>
           <p className="eyebrow">Controls</p>
-          <h2>Setup & Export</h2>
+          <h2>Controls</h2>
         </div>
-      </summary>
+      </div>
 
       <div className="control-panel-body">
-        <label className="field">
-          <span>Provider</span>
-          <select
-            aria-label="Provider mode"
-            value={config.providerMode}
-            disabled={isRunning}
-            onChange={(event) => onProviderModeChange(event.target.value as ProviderMode)}
-          >
-            {providerOptions.map((provider) => (
-              <option value={provider} key={provider}>
-                {formatProvider(provider)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <section className="control-section" aria-label="Start controls">
+          <div className="control-section-title">
+            <h3>Start</h3>
+          </div>
 
-        <label className="field">
-          <span>Discussion language</span>
-          <select
-            aria-label="Discussion language"
-            value={config.discussionLanguage}
-            disabled={isRunning}
-            onChange={(event) =>
-              onConfigChange({ discussionLanguage: event.target.value as DiscussionLanguage })
-            }
-          >
-            {languageOptions.map((language) => (
-              <option value={language} key={language}>
-                {formatLanguage(language)}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="field">
+            <span>Question</span>
+            <textarea
+              className="question-input"
+              value={config.question}
+              rows={6}
+              disabled={isRunning}
+              onChange={(event) => onConfigChange({ question: event.target.value })}
+            />
+          </label>
 
-        <label className="field">
-          <span>Visual scene</span>
-          <select
-            value={config.discussionScene}
-            disabled={isRunning}
-            onChange={(event) =>
-              onConfigChange({ discussionScene: event.target.value as DiscussionSceneId })
-            }
-          >
-            {sceneOptions.map((scene) => (
-              <option value={scene} key={scene}>
-                {sceneLabels[scene]}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="control-grid">
+            <label className="field">
+              <span>Provider</span>
+              <select
+                aria-label="Provider mode"
+                value={config.providerMode}
+                disabled={isRunning}
+                onChange={(event) => onProviderModeChange(event.target.value as ProviderMode)}
+              >
+                {providerOptions.map((provider) => (
+                  <option value={provider} key={provider}>
+                    {formatProvider(provider)}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="field">
-          <span>Question</span>
-          <textarea
-            className="question-input"
-            value={config.question}
-            rows={6}
-            disabled={isRunning}
-            onChange={(event) => onConfigChange({ question: event.target.value })}
-          />
-        </label>
-        {needsGuideSlot}
+            <label className="field">
+              <span>Language</span>
+              <select
+                aria-label="Discussion language"
+                value={config.discussionLanguage}
+                disabled={isRunning}
+                onChange={(event) =>
+                  onConfigChange({ discussionLanguage: event.target.value as DiscussionLanguage })
+                }
+              >
+                {languageOptions.map((language) => (
+                  <option value={language} key={language}>
+                    {formatLanguage(language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-        <div className="control-grid">
+          <div className="primary-actions">
+            <button className="primary-button" type="button" onClick={onRun} disabled={isRunning}>
+              <Play size={17} />
+              Start discussion
+            </button>
+            <button className="secondary-button" type="button" onClick={onStop} disabled={!isRunning}>
+              <Square size={16} />
+              Stop
+            </button>
+          </div>
+        </section>
+
+        {needsGuideSlot ? (
+          <details className="control-section" open>
+            <summary className="control-section-summary">
+              <div>
+                <p className="eyebrow">Guide</p>
+                <h3>Needs clarifier</h3>
+              </div>
+            </summary>
+            <div className="control-section-body">{needsGuideSlot}</div>
+          </details>
+        ) : null}
+
+        {agentRosterSlot}
+
+        <details className="control-section" open>
+          <summary className="control-section-summary">
+            <div>
+              <p className="eyebrow">Setup</p>
+              <h3>Discussion</h3>
+            </div>
+          </summary>
+          <div className="control-section-body">
+            <label className="field">
+              <span>Visual scene</span>
+              <select
+                value={config.discussionScene}
+                disabled={isRunning}
+                onChange={(event) =>
+                  onConfigChange({ discussionScene: event.target.value as DiscussionSceneId })
+                }
+              >
+                {sceneOptions.map((scene) => (
+                  <option value={scene} key={scene}>
+                    {sceneLabels[scene]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="control-grid">
           <label className="field">
             <span>Discussion template</span>
             <select
@@ -169,22 +208,22 @@ export function ControlPanel({
               ))}
             </select>
           </label>
-        </div>
+            </div>
 
-        <label className="field temperature-field">
-          <span>Rounds: {config.roundCount}</span>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            step="1"
-            value={config.roundCount}
-            disabled={isRunning}
-            onChange={(event) => onConfigChange({ roundCount: Number(event.target.value) })}
-          />
-        </label>
+            <label className="field temperature-field">
+              <span>Rounds: {config.roundCount}</span>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={config.roundCount}
+                disabled={isRunning}
+                onChange={(event) => onConfigChange({ roundCount: Number(event.target.value) })}
+              />
+            </label>
 
-        <div className="control-grid">
+            <div className="control-grid">
           <label className="field">
             <span>Speaking order</span>
             <select
@@ -218,30 +257,11 @@ export function ControlPanel({
               ))}
             </select>
           </label>
-        </div>
+            </div>
+          </div>
+        </details>
 
-        <div className="primary-actions">
-          <button className="primary-button" type="button" onClick={onRun} disabled={isRunning}>
-            <Play size={17} />
-            Start discussion
-          </button>
-          <button className="secondary-button" type="button" onClick={onStop} disabled={!isRunning}>
-            <Square size={16} />
-            Stop
-          </button>
-        </div>
-
-        <button
-          className="secondary-button full-width"
-          type="button"
-          onClick={onRegenerateAgents}
-          disabled={isRunning}
-        >
-          <RefreshCw size={16} />
-          Regenerate agents
-        </button>
-
-        <div className="export-box">
+        <section className="control-section" aria-label="Export controls">
           <div className="export-title">
             <Download size={16} />
             <span>Export</span>
@@ -260,9 +280,9 @@ export function ControlPanel({
               PDF
             </button>
           </div>
-        </div>
+        </section>
       </div>
-    </details>
+    </aside>
   )
 }
 

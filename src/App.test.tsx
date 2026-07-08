@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { vi } from 'vitest'
 import { App } from './App'
 
@@ -11,6 +11,21 @@ describe('App', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     localStorage.clear()
+  })
+
+  it('renders history, discussion, and controls as the primary layout', () => {
+    render(<App />)
+
+    const history = screen.getByLabelText('Conversation History')
+    const discussion = screen.getByLabelText('Discussion transcript')
+    const controls = screen.getByLabelText('Roundtable controls')
+
+    expect(history.compareDocumentPosition(discussion)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(discussion.compareDocumentPosition(controls)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(within(controls).getByLabelText('Question')).toBeInTheDocument()
+    expect(within(controls).getByRole('button', { name: /start discussion/i })).toBeInTheDocument()
+    expect(within(controls).getByLabelText('Agent roster')).toBeInTheDocument()
+    expect(within(controls).getByText('Export')).toBeInTheDocument()
   })
 
   it('switches topic space and runs a mock streaming discussion', async () => {

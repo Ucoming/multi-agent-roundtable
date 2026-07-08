@@ -17,6 +17,7 @@ const styleOptions: SpeakingStyle[] = [
 interface AgentRosterProps {
   agents: AgentProfile[]
   disabled: boolean
+  embedded?: boolean
   maxAgents: number
   minAgents: number
   topicSpace: TopicSpaceId
@@ -31,6 +32,7 @@ interface AgentRosterProps {
 export function AgentRoster({
   agents,
   disabled,
+  embedded = false,
   maxAgents,
   minAgents,
   topicSpace,
@@ -50,25 +52,8 @@ export function AgentRoster({
       ? 'Choose a philosophy agent...'
       : 'Choose a relationship agent...'
 
-  return (
-    <aside className="panel agent-panel" aria-label="Agent roster">
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">Roundtable</p>
-          <h2>Agent members</h2>
-        </div>
-        <button
-          className="icon-button"
-          type="button"
-          onClick={onResetAgents}
-          disabled={disabled}
-          title="Regenerate agents from the selected template"
-          aria-label="Regenerate agents from template"
-        >
-          <RefreshCw size={17} />
-        </button>
-      </div>
-
+  const rosterControls = (
+    <>
       <div className="agent-count">
         <div className="agent-count-label">
           <SlidersHorizontal size={16} />
@@ -233,6 +218,53 @@ export function AgentRoster({
           </article>
         ))}
       </div>
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <details className="control-section agent-roster-embed" aria-label="Agent roster" open>
+        <summary className="control-section-summary">
+          <div>
+            <p className="eyebrow">Roundtable</p>
+            <h3>Agent members</h3>
+          </div>
+          <button
+            className="mini-icon-button"
+            type="button"
+            onClick={onResetAgents}
+            disabled={disabled}
+            title="Regenerate agents from the selected template"
+            aria-label="Regenerate agents from template"
+          >
+            <RefreshCw size={15} />
+          </button>
+        </summary>
+        <div className="control-section-body">{rosterControls}</div>
+      </details>
+    )
+  }
+
+  return (
+    <aside className="panel agent-panel" aria-label="Agent roster">
+      <div className="panel-header">
+        <div>
+          <p className="eyebrow">Roundtable</p>
+          <h2>Agent members</h2>
+        </div>
+        <button
+          className="icon-button"
+          type="button"
+          onClick={onResetAgents}
+          disabled={disabled}
+          title="Regenerate agents from the selected template"
+          aria-label="Regenerate agents from template"
+        >
+          <RefreshCw size={17} />
+        </button>
+      </div>
+
+      {rosterControls}
     </aside>
   )
 }
