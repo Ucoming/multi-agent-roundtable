@@ -38,7 +38,7 @@ export function ConversationHistorySidebar({
       <div className="conversation-sidebar-header">
         <div>
           <p className="eyebrow">History</p>
-          <h2>Conversation History / 对话历史</h2>
+          <h2>Conversation History</h2>
         </div>
         <button
           className="mini-action-button"
