@@ -59,10 +59,19 @@ describe('App', () => {
     expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText(/1 saved discussions/i)).toBeInTheDocument())
 
+    const questionInput = screen.getByLabelText('Question')
+    const originalQuestion = (questionInput as HTMLTextAreaElement).value
+    fireEvent.change(questionInput, { target: { value: 'Temporary changed question.' } })
+
+    const currentOpenButton = screen.getAllByRole('button', { name: /^open /i })[0]
+    expect(currentOpenButton).toBeEnabled()
+    fireEvent.click(currentOpenButton)
+    expect(await screen.findByDisplayValue(originalQuestion)).toBeInTheDocument()
+
     fireEvent.click(screen.getByRole('button', { name: /^new$/i }))
     expect(screen.getByText(/Ask a question, choose a template/i)).toBeInTheDocument()
 
-    const loadButton = screen.getAllByRole('button', { name: /^load /i })[0]
+    const loadButton = screen.getAllByRole('button', { name: /^open /i })[0]
     fireEvent.click(loadButton)
 
     expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()

@@ -675,27 +675,55 @@ textarea:disabled {
   background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface));
 }
 
+.session-title-row,
 .session-title,
 .session-meta,
 .session-updated,
-.session-preview {
+.session-preview,
+.session-open-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.session-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .session-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
   font-weight: 800;
 }
 
+.session-current-pill {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--surface);
+  background: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .session-meta,
 .session-updated,
-.session-preview {
+.session-preview,
+.session-open-label {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.25;
+}
+
+.session-open-label {
+  color: var(--accent-strong);
+  font-weight: 800;
 }
 
 .session-preview {

@@ -68,11 +68,14 @@ export function SessionHistoryPanel({
                   <button
                     className="session-load-button"
                     type="button"
-                    disabled={disabled || isCurrent}
-                    aria-label={`Load ${session.title}`}
+                    disabled={disabled}
+                    aria-label={`Open ${session.title}`}
                     onClick={() => onLoadSession(session.id)}
                   >
-                    <span className="session-title">{session.title}</span>
+                    <span className="session-title-row">
+                      <span className="session-title">{session.title}</span>
+                      {isCurrent ? <span className="session-current-pill">Current</span> : null}
+                    </span>
                     <span className="session-meta">
                       {formatTopic(session.topicSpace)} | {formatStatus(session.status)} |{' '}
                       {session.messageCount} messages
@@ -81,6 +84,9 @@ export function SessionHistoryPanel({
                     {session.summaryPreview ? (
                       <span className="session-preview">{session.summaryPreview}</span>
                     ) : null}
+                    <span className="session-open-label">
+                      {isCurrent ? 'Click to restore saved state' : 'Open discussion'}
+                    </span>
                   </button>
                   <button
                     className="session-delete-button"
