@@ -1,6 +1,6 @@
 import { Minus, Plus, RefreshCw, SlidersHorizontal, Trash2 } from 'lucide-react'
-import { agentPresetLibrary, type AgentPresetId } from '../data/templates'
-import type { AgentProfile, ModelLabel, SpeakingStyle } from '../types'
+import { getAgentPresetsForTopic, type AgentPresetId } from '../data/templates'
+import type { AgentProfile, ModelLabel, SpeakingStyle, TopicSpaceId } from '../types'
 
 const modelOptions: ModelLabel[] = ['GPT-5.5', 'Claude', 'DeepSeek', 'Gemini', 'Ollama']
 const styleOptions: SpeakingStyle[] = [
@@ -19,6 +19,7 @@ interface AgentRosterProps {
   disabled: boolean
   maxAgents: number
   minAgents: number
+  topicSpace: TopicSpaceId
   onAddAgent(): void
   onAddPresetAgent(presetId: AgentPresetId): void
   onAgentChange(id: string, patch: Partial<AgentProfile>): void
@@ -32,6 +33,7 @@ export function AgentRoster({
   disabled,
   maxAgents,
   minAgents,
+  topicSpace,
   onAddAgent,
   onAddPresetAgent,
   onAgentChange,
@@ -42,6 +44,11 @@ export function AgentRoster({
   const enabledCount = agents.filter((agent) => agent.enabled).length
   const canAdd = !disabled && agents.length < maxAgents
   const canRemove = !disabled && agents.length > minAgents
+  const presetOptions = getAgentPresetsForTopic(topicSpace)
+  const presetPlaceholder =
+    topicSpace === 'philosophy'
+      ? 'Choose a philosophy agent...'
+      : 'Choose a relationship agent...'
 
   return (
     <aside className="panel agent-panel" aria-label="Agent roster">
@@ -102,8 +109,8 @@ export function AgentRoster({
             if (presetId) onAddPresetAgent(presetId)
           }}
         >
-          <option value="">Choose a relationship agent...</option>
-          {agentPresetLibrary.map((preset) => (
+          <option value="">{presetPlaceholder}</option>
+          {presetOptions.map((preset) => (
             <option value={preset.id} key={preset.id}>
               {preset.shortLabel}
             </option>

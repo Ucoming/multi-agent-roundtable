@@ -33,6 +33,15 @@ const themes = {
     face: '#77d4ff',
     line: '#effffb',
   },
+  philosophy: {
+    prefix: 'philosophy-study-',
+    bg: '#f2ead8',
+    panel: '#c7b58a',
+    table: '#234d43',
+    accent: '#9a6b35',
+    face: '#d6c49b',
+    line: '#1f302b',
+  },
 }
 
 const avatarNames = [
@@ -54,11 +63,20 @@ const avatarNames = [
   'operator',
   'numbers',
   'committee',
+  'contradiction',
+  'socratic',
+  'stoic',
+  'existential',
+  'daoist',
+  'pragmatist',
+  'marxian',
+  'ethics',
 ]
 
 writePng('theme-warm-family.png', drawThemePreview(themes.warm, 'warm'))
 writePng('theme-work-mode.png', drawThemePreview(themes.work, 'work'))
 writePng('theme-tech-vision.png', drawThemePreview(themes.tech, 'tech'))
+writePng('theme-philosophy-study.png', drawThemePreview(themes.philosophy, 'philosophy'))
 
 for (const [themeName, theme] of Object.entries(themes)) {
   for (const [index, name] of avatarNames.entries()) {
@@ -108,6 +126,15 @@ function drawThemePreview(theme, variant) {
     for (let x = 120; x < 820; x += 80) drawCircle(png, x, 350, 4, theme.accent)
   }
 
+  if (variant === 'philosophy') {
+    drawRoundedRect(png, 165, 70, 96, 172, 10, '#6e4c2f')
+    drawRoundedRect(png, 275, 64, 82, 184, 10, '#234d43')
+    drawRoundedRect(png, 368, 82, 74, 162, 10, '#9a6b35')
+    drawRoundedRect(png, 628, 78, 110, 166, 10, '#39423c')
+    drawLine(png, 150, 304, 760, 304, theme.line, 4)
+    drawCircle(png, 760, 98, 18, withAlpha(theme.accent, 150))
+  }
+
   return png
 }
 
@@ -129,12 +156,19 @@ function drawAvatar(theme, variant, index) {
     drawCircle(png, 65, 80, 5, theme.line)
     drawCircle(png, 95, 80, 5, theme.line)
     drawRoundedRect(png, 57, 102, 48, 7, 4, theme.line)
-  } else {
+  } else if (variant === 'tech') {
     drawCircle(png, 80, 82, 50, withAlpha(theme.table, 70))
     drawCircle(png, 65, 77, 6, theme.line)
     drawCircle(png, 96, 77, 6, theme.line)
     drawLine(png, 62, 103, 99, 103, theme.accent, 4)
     drawLine(png, 34, 80, 126, 80, withAlpha(theme.accent, 160), 2)
+  } else {
+    drawRoundedRect(png, 50, 38, 60, 16, 5, theme.line)
+    drawLine(png, 48, 61, 112, 61, theme.accent, 3)
+    drawCircle(png, 65, 79, 5, theme.line)
+    drawCircle(png, 95, 79, 5, theme.line)
+    drawLine(png, 62, 102, 99, 102, theme.line, 3)
+    drawRoundedRect(png, 56, 118, 48, 10, 4, theme.accent)
   }
 
   const markerColor = accentShift === 0 ? theme.accent : accentShift === 1 ? theme.table : theme.line

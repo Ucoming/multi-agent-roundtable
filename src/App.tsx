@@ -4,7 +4,7 @@ import { AgentRoster } from './components/AgentRoster'
 import { ControlPanel } from './components/ControlPanel'
 import { DiscussionView } from './components/DiscussionView'
 import { NeedsGuidePanel } from './components/NeedsGuidePanel'
-import { themeCatalog } from './data/themeCatalog'
+import { getTopicDefinition, topicCatalog } from './data/topicCatalog'
 import {
   createAgentFromPreset,
   createAgentsFromTemplate,
@@ -25,6 +25,7 @@ import type {
   RoundtableExportState,
   RoundtableTemplate,
   ThemeId,
+  TopicSpaceId,
 } from './types'
 
 const mockChunkDelayMs = import.meta.env.MODE === 'test' ? 0 : 18
@@ -75,6 +76,7 @@ export function App() {
   )
 
   const enabledAgentCount = agents.filter((agent) => agent.enabled).length
+  const currentTopic = getTopicDefinition(config.topicSpace)
 
   function updateConfig(patch: Partial<RoundtableConfig>) {
     setConfig((current) => ({ ...current, ...patch }))
@@ -89,14 +91,19 @@ export function App() {
     setAgents(createAgentsFromTemplate(template, config.question, config.theme))
   }
 
-  function updateTheme(theme: ThemeId) {
-    setConfig((current) => ({ ...current, theme }))
-    setAgents((current) =>
-      current.map((agent) => ({
-        ...agent,
-        avatarUrl: getThemedAvatarUrl(agent.avatarUrl, theme),
-      })),
-    )
+  function updateTopicSpace(topicSpace: TopicSpaceId) {
+    const topic = getTopicDefinition(topicSpace)
+    setConfig((current) => ({
+      ...current,
+      topicSpace,
+      theme: topic.theme,
+      template: topic.template,
+      discussionMode: topic.discussionMode,
+      finalOutputType: topic.finalOutputType,
+      question: topic.defaultQuestion,
+      preDiscussionContext: undefined,
+    }))
+    setAgents(createAgentsFromTemplate(topic.template, topic.defaultQuestion, topic.theme))
   }
 
   function updateProviderMode(providerMode: ProviderMode) {
@@ -113,7 +120,7 @@ export function App() {
   function addAgent() {
     setAgents((current) => {
       if (current.length >= maxAgents) return current
-      return [...current, createCustomAgent(current.length + 1, config.theme)]
+      return [...current, createCustomAgent(current.length + 1, config.theme, config.topicSpace)]
     })
   }
 
@@ -222,21 +229,21 @@ export function App() {
           </div>
           <div>
             <p className="eyebrow">Multi-Agent Roundtable</p>
-            <h1>Reflect on relationship questions with multiple caring perspectives.</h1>
+            <h1>{currentTopic.headline}</h1>
           </div>
         </div>
 
         <label className="theme-switcher">
-          <span>Style</span>
+          <span>Topic</span>
           <select
-            aria-label="Theme style"
-            value={config.theme}
+            aria-label="Topic space"
+            value={config.topicSpace}
             disabled={isRunning}
-            onChange={(event) => updateTheme(event.target.value as ThemeId)}
+            onChange={(event) => updateTopicSpace(event.target.value as TopicSpaceId)}
           >
-            {themeCatalog.map((theme) => (
-              <option value={theme.id} key={theme.id}>
-                {theme.label}
+            {topicCatalog.map((topic) => (
+              <option value={topic.id} key={topic.id}>
+                {topic.label}
               </option>
             ))}
           </select>
@@ -249,6 +256,7 @@ export function App() {
           disabled={isRunning}
           maxAgents={maxAgents}
           minAgents={minAgents}
+          topicSpace={config.topicSpace}
           onAddAgent={addAgent}
           onAddPresetAgent={addPresetAgent}
           onAgentChange={updateAgent}
@@ -324,14 +332,18 @@ function createUserInterjection(content: string, round: number): RoundtableExpor
   }
 }
 
-function createCustomAgent(index: number, theme: ThemeId): AgentProfile {
+function createCustomAgent(index: number, theme: ThemeId, topicSpace: TopicSpaceId): AgentProfile {
   const avatar = customAgentAvatars[(index - 1) % customAgentAvatars.length]
+  const isPhilosophy = topicSpace === 'philosophy'
   return {
     id: `custom-agent-${Date.now()}-${index}`,
     name: `Custom Agent ${index}`,
-    role: 'Adds a new reflective perspective to the table.',
-    systemPrompt:
-      'You contribute a distinct perspective on the relationship or emotional question, respond to the prior speaker, and help the user think without pretending there is one perfect answer.',
+    role: isPhilosophy
+      ? 'Adds a distinct philosophical lens to the table.'
+      : 'Adds a new reflective perspective to the table.',
+    systemPrompt: isPhilosophy
+      ? 'You contribute a distinct philosophical lens, clarify assumptions, compare values, and help the user think without pretending there is one perfect answer.'
+      : 'You contribute a distinct perspective on the relationship or emotional question, respond to the prior speaker, and help the user think without pretending there is one perfect answer.',
     model: 'DeepSeek',
     temperature: 0.55,
     speakingStyle: 'Pragmatic',

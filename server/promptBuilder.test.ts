@@ -67,6 +67,40 @@ describe('prompt builder', () => {
     expect(prompt.user).toContain('Multiple plausible readings or outcomes')
   })
 
+  it('adds philosophy mode rules and theory lenses', () => {
+    const agents = createAgentsFromTemplate('philosophy-reflection')
+    const messages = [createMessage(agents[0].id, agents[0].name, 'The main contradiction is practical.')]
+    const config = {
+      ...defaultConfig,
+      topicSpace: 'philosophy' as const,
+      theme: 'philosophy-study' as const,
+      template: 'philosophy-reflection' as const,
+      discussionMode: 'philosophy-reflection' as const,
+    }
+
+    const agentPrompt = buildAgentPrompt({
+      agent: agents[0],
+      config,
+      round: 1,
+      turnIndex: 0,
+      activeAgents: agents,
+      previousMessages: [],
+      discussionBrief: createBrief([]),
+    })
+    const moderatorPrompt = buildModeratorPrompt({
+      config,
+      activeAgents: agents,
+      messages,
+      discussionBrief: createBrief(messages),
+    })
+
+    expect(agentPrompt.system).toContain('method-inspired lens')
+    expect(agentPrompt.system).toContain('Avoid propaganda')
+    expect(moderatorPrompt.user).toContain('Practice and contradiction analysis')
+    expect(moderatorPrompt.user).toContain('Socratic method')
+    expect(moderatorPrompt.user).toContain('Ethics')
+  })
+
   it('builds staged needs guide prompts and fixed summary instructions', () => {
     const storyPrompt = buildNeedsGuidePrompt({
       config: defaultConfig,

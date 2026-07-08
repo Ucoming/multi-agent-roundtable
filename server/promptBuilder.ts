@@ -40,6 +40,7 @@ export function buildAgentPrompt(input: ProviderTurnInput): ChatPrompt {
       '- Do not invent tool results, private API state, or hidden messages.',
       '- This is reflective support, not professional therapy, diagnosis, legal advice, or emergency help.',
       '- If the transcript suggests self-harm, abuse, coercion, or immediate danger, prioritize safety and recommend trusted human or emergency support.',
+      formatModeSpecificRules(input.config.discussionMode),
     ].join('\n'),
     user: [
       `Original user question: ${input.config.question}`,
@@ -276,6 +277,16 @@ function formatBullets(items: string[]) {
 }
 
 function formatTheoryGuide(mode: string) {
+  const philosophyGuide = [
+    '- Practice and contradiction analysis: concrete conditions, principal contradiction, secondary contradictions, and action as a test of understanding.',
+    '- Socratic method: definitions, hidden assumptions, internal contradictions, and clearer claims.',
+    '- Stoic inquiry: control versus non-control, judgment, desire, discipline, and action.',
+    '- Existentialist inquiry: freedom, responsibility, authenticity, bad faith, absurdity, and chosen meaning.',
+    '- Daoist inquiry: non-forcing, timing, reversal, balance, and the cost of over-control.',
+    '- Pragmatism: consequences, experiments, lived verification, and belief revision.',
+    '- Material conditions: interests, institutions, incentives, power, labor, and historical constraints.',
+    '- Ethics: consequentialist, deontological, virtue, and care-ethical readings.',
+  ]
   const relationshipGuide = [
     '- Adult attachment theory: pursue-withdraw cycles, reassurance, distancing, safety, and secure-base behavior.',
     '- Nonviolent Communication: observations, feelings, needs, requests, and blame-free wording.',
@@ -290,6 +301,10 @@ function formatTheoryGuide(mode: string) {
     '- Systems thinking: feedback loops, incentives, second-order effects, and constraints.',
   ]
 
+  if (mode === 'philosophy-reflection') {
+    return philosophyGuide.join('\n')
+  }
+
   if (
     mode === 'relationship-reflection' ||
     mode === 'emotional-clarity' ||
@@ -300,6 +315,20 @@ function formatTheoryGuide(mode: string) {
   }
 
   return genericGuide.join('\n')
+}
+
+function formatModeSpecificRules(mode: string) {
+  if (mode !== 'philosophy-reflection') return ''
+
+  return [
+    '',
+    'Philosophy mode rules:',
+    '- Treat each agent as a method-inspired lens, not as the historical philosopher speaking.',
+    '- Clarify concepts and assumptions before giving advice.',
+    '- Connect abstract claims back to practical action, consequences, or lived tests.',
+    '- Preserve deep disagreement when different philosophical frameworks imply different priorities.',
+    '- Avoid propaganda, hagiography, or one-school certainty.',
+  ].join('\n')
 }
 
 function buildTurnMove(input: ProviderTurnInput) {

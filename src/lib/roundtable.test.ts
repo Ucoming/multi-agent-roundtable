@@ -1,4 +1,10 @@
-import { createAgentsFromTemplate, defaultConfig, templateLabels } from '../data/templates'
+import { getTopicDefinition } from '../data/topicCatalog'
+import {
+  createAgentsFromTemplate,
+  defaultConfig,
+  getAgentPresetsForTopic,
+  templateLabels,
+} from '../data/templates'
 import { createDiscussionPlan, getSpeakingSequence, runRoundtable } from './discussionEngine'
 import { createJsonExport, createMarkdownExport } from './exports'
 import { createMockProvider } from './mockProvider'
@@ -22,6 +28,21 @@ describe('roundtable templates', () => {
       expect(agents.length).toBeLessThanOrEqual(5)
       expect(agents.every((agent) => agent.enabled)).toBe(true)
     }
+  })
+
+  it('creates philosophy agents and topic defaults', () => {
+    const agents = createAgentsFromTemplate('philosophy-reflection')
+    const names = agents.map((agent) => agent.name)
+    const philosophyTopic = getTopicDefinition('philosophy')
+    const philosophyPresets = getAgentPresetsForTopic('philosophy')
+
+    expect(names).toContain('Contradiction & Practice Lens')
+    expect(names).toContain('Socratic Questioner')
+    expect(names).toContain('Ethics Referee')
+    expect(philosophyTopic.theme).toBe('philosophy-study')
+    expect(philosophyTopic.template).toBe('philosophy-reflection')
+    expect(philosophyPresets.every((preset) => preset.group === 'philosophy')).toBe(true)
+    expect(philosophyPresets.map((preset) => preset.id)).toContain('ethics-referee')
   })
 })
 

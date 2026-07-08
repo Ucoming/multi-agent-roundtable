@@ -316,6 +316,9 @@ function modeDirective(mode: string, isChinese: boolean) {
     'dating-clarity': isChinese
       ? '恋爱判断要同时看吸引、尊重、边界、互惠和操控风险。'
       : 'For dating clarity, examine attraction, respect, boundaries, reciprocity, and manipulation risk together.',
+    'philosophy-reflection': isChinese
+      ? '哲学反思要先澄清概念和矛盾，再把抽象判断放回实践、伦理和现实条件中检验。'
+      : 'For philosophy reflection, clarify concepts and contradictions, then test abstract claims against practice, ethics, and real conditions.',
     brainstorming: isChinese
       ? '头脑风暴只有在能沉淀实验时才有价值。'
       : 'For brainstorming, divergence is useful only if we capture the highest-value experiments.',
@@ -359,11 +362,20 @@ function theoryDirective(mode: string, isChinese: boolean) {
     mode === 'emotional-clarity' ||
     mode === 'conflict-mediation' ||
     mode === 'dating-clarity'
+  const isPhilosophyMode = mode === 'philosophy-reflection'
 
   if (isChinese) {
+    if (isPhilosophyMode) {
+      return '可以把本次讨论连接到实践与矛盾分析、苏格拉底追问、斯多葛可控/不可控、存在主义自由与责任、道家顺势、实用主义实验、历史唯物的现实条件，以及后果论/义务论/德性伦理/关怀伦理。'
+    }
+
     return isRelationshipMode
       ? '可以把本次讨论连接到成人依恋理论、非暴力沟通、CBT 的想法-感受-行为链条、Gottman 式修复尝试，以及边界/同意框架。'
       : '可以把本次讨论连接到决策理论、认知偏差、冲突解决框架和系统思维。'
+  }
+
+  if (isPhilosophyMode) {
+    return 'Map the discussion to practice and contradiction analysis, Socratic questioning, Stoic control, existential freedom and responsibility, Daoist non-forcing, pragmatist experiments, material conditions, and consequentialist/deontological/virtue/care ethics.'
   }
 
   return isRelationshipMode

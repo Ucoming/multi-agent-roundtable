@@ -26,6 +26,12 @@ export const themeCatalog: ThemeDefinition[] = [
     description: 'A bright lab mood for speculative futures.',
     previewUrl: './assets/theme-tech-vision.png',
   },
+  {
+    id: 'philosophy-study',
+    label: 'Philosophy Study',
+    description: 'A quiet study table for reflective and philosophical questions.',
+    previewUrl: './assets/theme-philosophy-study.png',
+  },
 ]
 
 export const getThemeDefinition = (id: ThemeId) =>

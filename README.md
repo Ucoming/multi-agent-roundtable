@@ -8,8 +8,10 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 
 - Three-pane product layout: editable agents, live discussion transcript, and session controls.
 - Agent fields: name, role, system prompt, model label, temperature, speaking style, and enabled toggle.
-- Templates: Relationship Reflection, Emotional Clarity, Conflict Mediation, Brainstorming, Debate, Peer Review, and Investment Committee.
+- Topic spaces: Relationships & Feelings, and Philosophy & Thinking.
+- Templates: Relationship Reflection, Emotional Clarity, Conflict Mediation, Dating Clarity, Philosophy Reflection, Brainstorming, Debate, Peer Review, and Investment Committee.
 - Relationship agent library with preset perspectives such as Empathic Listener, Rational Analyst, NVC Needs Translator, Boundary Coach, Attachment Lens, CBT Reframer, and Repair Planner.
+- Philosophy agent library with method-inspired lenses such as Contradiction & Practice Lens, Socratic Questioner, Stoic Examiner, Existential Mirror, Daoist Balance Reader, Material Conditions Lens, and Ethics Referee.
 - Optional pre-roundtable needs clarifier that guides the user through 3 short rounds before turning unclear feelings into a roundtable-ready question and context summary.
 - Live user interjections during a running discussion; later agents receive the added context in the shared transcript.
 - Safe GFM Markdown rendering for agent messages and moderator summaries, including lists, tables, quotes, inline code, and code blocks.
@@ -19,7 +21,7 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Deliberation protocol that requires later agents to respond to prior speakers with agreement, disagreement, or partial agreement instead of isolated turn-taking.
 - Moderator theory connection that maps the user's problem and table discussion to relevant frameworks such as attachment theory, NVC, CBT, repair attempts, boundaries, decision theory, or cognitive bias lenses.
 - Speaking orders: fixed, deterministic random, and moderator-called.
-- Themes: Warm Family, Work Mode, and Tech Vision, with generated local PNG assets.
+- Themes: Warm Family, Philosophy Study, Work Mode, and Tech Vision, with generated local PNG assets.
 - Provider modes: Mock demo and DeepSeek live through the local Express API.
 - Token and cost tracking, preferring real provider usage when available.
 - Exports: Markdown, JSON, and client-side PDF.
@@ -107,6 +109,12 @@ The richer relationship agents are built as method-inspired archetypes rather th
 - Five Love Languages inspired `Love Language Interpreter`, but the app treats it as a conversational heuristic rather than hard science.
 - Chinese internet relationship-advice culture, including Lu Qi, Leng Ai, Mystery Method / pickup coaching, and paid recovery-consulting ecosystems, inspired two guarded agents: `Ethical Dating Coach` extracts only consent-based social confidence, while `PUA Risk Auditor` flags manipulation, coercion, false urgency, and paid-consulting traps.
 
+The Philosophy & Thinking topic also uses method-inspired archetypes rather than impersonations:
+
+- `Contradiction & Practice Lens` distills practice-first and contradiction-analysis methods associated with `On Practice` and `On Contradiction`, focusing on concrete conditions, principal contradictions, and action as the test of understanding.
+- `Socratic Questioner`, `Stoic Examiner`, `Existential Mirror`, `Daoist Balance Reader`, `Pragmatist Experimentalist`, `Marxian Material Conditions Lens`, and `Ethics Referee` provide contrasting lenses for definitions, control, freedom, non-forcing, experiments, material constraints, and moral tradeoffs.
+- These agents are not written as the historical philosophers themselves, and philosophy mode explicitly avoids propaganda, hagiography, and one-school certainty.
+
 ## Completion Log
 
 - 2026-07-07: Implemented the initial GitHub Pages-ready Multi-Agent Roundtable app with mock streaming, editable agents, three themes, local PNG assets, Markdown/JSON/PDF export, tests, and deployment workflow.
@@ -119,3 +127,4 @@ The richer relationship agents are built as method-inspired archetypes rather th
 - 2026-07-08: Reworked turn routing from latest-message handoff to whole-table discussion briefs, with multi-speaker reference tracking in prompts, UI, exports, and tests.
 - 2026-07-08: Added agent-specific attention filtering and required theory mapping in moderator summaries, so final outputs connect the user's situation to relevant frameworks without turning them into diagnoses.
 - 2026-07-08: Added the pre-roundtable needs clarifier with 3-stage guided chat, mock and DeepSeek SSE providers, context handoff into roundtable prompts, and export support.
+- 2026-07-08: Replaced the top-right visual style selector with a topic-space selector and added Philosophy & Thinking mode with philosophy-specific agents, prompt rules, theme, assets, and tests.

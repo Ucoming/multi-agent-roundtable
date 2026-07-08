@@ -15,6 +15,7 @@ export type RoundtableTemplate =
   | 'emotional-clarity'
   | 'conflict-mediation'
   | 'dating-clarity'
+  | 'philosophy-reflection'
   | 'brainstorming'
   | 'debate'
   | 'peer-review'
@@ -27,6 +28,7 @@ export type DiscussionMode =
   | 'emotional-clarity'
   | 'conflict-mediation'
   | 'dating-clarity'
+  | 'philosophy-reflection'
   | 'brainstorming'
   | 'debate'
   | 'peer-review'
@@ -34,7 +36,9 @@ export type DiscussionMode =
 
 export type FinalOutputType = 'summary' | 'reflection' | 'decision' | 'action-list' | 'report'
 
-export type ThemeId = 'warm-family' | 'work-mode' | 'tech-vision'
+export type ThemeId = 'warm-family' | 'work-mode' | 'tech-vision' | 'philosophy-study'
+
+export type TopicSpaceId = 'relationships' | 'philosophy'
 
 export type DiscussionSceneId = 'cozy-roundtable' | 'strategy-room' | 'future-lab'
 
@@ -60,6 +64,7 @@ export interface AgentProfile {
 export interface RoundtableConfig {
   question: string
   preDiscussionContext?: string
+  topicSpace: TopicSpaceId
   providerMode: ProviderMode
   discussionLanguage: DiscussionLanguage
   template: RoundtableTemplate

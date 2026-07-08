@@ -3,17 +3,23 @@ import { vi } from 'vitest'
 import { App } from './App'
 
 describe('App', () => {
-  it('switches theme and runs a mock streaming discussion', async () => {
+  it('switches topic space and runs a mock streaming discussion', async () => {
     render(<App />)
 
-    fireEvent.change(screen.getByLabelText('Theme style'), {
-      target: { value: 'tech-vision' },
+    fireEvent.change(screen.getByLabelText('Topic space'), {
+      target: { value: 'philosophy' },
     })
     fireEvent.change(screen.getByLabelText('Visual scene'), {
       target: { value: 'future-lab' },
     })
 
+    expect(
+      screen.getByRole('heading', {
+        name: 'Think through hard questions with contrasting philosophical lenses.',
+      }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Future Lab' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Contradiction & Practice Lens')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Add agent'))
     expect(screen.getByText(/6 total/i)).toBeInTheDocument()
@@ -23,13 +29,14 @@ describe('App', () => {
 
     fireEvent.click(screen.getByLabelText('Remove last agent'))
     fireEvent.change(screen.getByLabelText('Add preset agent'), {
-      target: { value: 'cbt-reframer' },
+      target: { value: 'ethics-referee' },
     })
-    expect(screen.getByDisplayValue('CBT Reframer')).toBeInTheDocument()
+    expect(screen.getAllByDisplayValue('Ethics Referee').length).toBeGreaterThan(0)
+    expect(screen.queryByText('CBT Reframer')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 
-    expect(await screen.findByText(/本轮共有/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Theory Link/i)).toBeInTheDocument()
     expect(screen.getByText(/spoke last/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
   })

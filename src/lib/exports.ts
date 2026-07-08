@@ -44,6 +44,7 @@ ${state.config.preDiscussionContext || 'No pre-discussion context provided.'}
 ## Configuration
 
 - Template: ${state.config.template}
+- Topic space: ${state.config.topicSpace}
 - Provider: ${state.config.providerMode}
 - Discussion language: ${state.config.discussionLanguage}
 - Discussion mode: ${state.config.discussionMode}
