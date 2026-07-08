@@ -24,6 +24,10 @@ describe('prompt builder', () => {
     expect(prompt.user).toContain('Should we launch the product now?')
     expect(prompt.user).toContain('The latest message names a risk.')
     expect(prompt.user).toContain('The first transcript point matters.')
+    expect(prompt.system).toContain('Required output language: Chinese')
+    expect(prompt.system).toContain('Use Markdown')
+    expect(prompt.system).toContain('Agree, Disagree, or Partly agree')
+    expect(prompt.user).toContain('Respond directly to')
   })
 
   it('builds a moderator prompt from the final full transcript', () => {
@@ -39,6 +43,8 @@ describe('prompt builder', () => {
     expect(prompt.system).toContain('moderator')
     expect(prompt.user).toContain('action-list')
     expect(prompt.user).toContain('Prototype the smallest path.')
+    expect(prompt.user).toContain('Main disagreement or unresolved tension')
+    expect(prompt.user).toContain('Multiple plausible readings or outcomes')
   })
 })
 

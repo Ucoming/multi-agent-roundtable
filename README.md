@@ -11,6 +11,9 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Templates: Relationship Reflection, Emotional Clarity, Conflict Mediation, Brainstorming, Debate, Peer Review, and Investment Committee.
 - Relationship agent library with preset perspectives such as Empathic Listener, Rational Analyst, NVC Needs Translator, Boundary Coach, Attachment Lens, CBT Reframer, and Repair Planner.
 - Live user interjections during a running discussion; later agents receive the added context in the shared transcript.
+- Safe GFM Markdown rendering for agent messages and moderator summaries, including lists, tables, quotes, inline code, and code blocks.
+- Discussion language control for Chinese or English model output.
+- Deliberation protocol that requires later agents to respond to prior speakers with agreement, disagreement, or partial agreement instead of isolated turn-taking.
 - Speaking orders: fixed, deterministic random, and moderator-called.
 - Themes: Warm Family, Work Mode, and Tech Vision, with generated local PNG assets.
 - Provider modes: Mock demo and DeepSeek live through the local Express API.
@@ -79,6 +82,8 @@ The frontend uses the `LlmProvider` interface. `createMockProvider` streams dete
 
 The group-chat model is sequential: one API call per speaking agent, each later agent receives the visible transcript so far, and the moderator receives the final transcript.
 
+Each live agent prompt now includes a deliberation contract: use Markdown, answer in the selected language, name the prior speaker being addressed, state whether it agrees, disagrees, or partly agrees, and preserve unresolved disagreement when the question has no single correct answer. The moderator synthesis is asked to separate common ground, unresolved tension, multiple plausible outcomes, next conversation moves, and safety or boundary notes.
+
 ## Relationship Reflection Boundary
 
 The relationship and emotional templates are designed for reflection, perspective-taking, and communication planning. They are not therapy, diagnosis, legal advice, or emergency support. If a transcript suggests self-harm, abuse, coercion, or immediate danger, agents are instructed to prioritize real-world safety and recommend trusted human or emergency support.
@@ -92,3 +97,4 @@ The first preset agent library is inspired by public communication and therapy-a
 - 2026-07-07: Refined the roundtable scene toward a Stanford small-town style with map tiles, roads, small buildings, and a central plaza table; added visible agent count controls for adding, removing, and deleting agents.
 - 2026-07-08: Upgraded the app to local full-stack DeepSeek live mode with Express SSE endpoints, provider mode switching, safe `.env` secrets, prompt/payload tests, and retained mock fallback.
 - 2026-07-08: Reoriented the default experience toward relationship and emotional reflection, added relationship-specific templates and preset agents, and added live user interjections that route into later agent turns.
+- 2026-07-08: Added safe Markdown rendering, a Chinese/English discussion language selector, and a stronger disagreement-aware deliberation protocol for agent turns and moderator summaries.

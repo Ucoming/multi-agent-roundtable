@@ -48,7 +48,7 @@ describe('roundtable run', () => {
     )
 
     expect(result.messages).toHaveLength(agents.length * 2)
-    expect(result.summary.content).toContain('Moderator summary')
+    expect(result.summary.content).toContain('主持人总结')
     expect(result.costSummary.totalTokens).toBeGreaterThan(0)
   })
 
@@ -115,7 +115,7 @@ describe('exports', () => {
     expect(markdown).toContain(result.messages[0].content)
     expect(markdown).toContain(result.summary.content)
     expect(json).toContain(defaultConfig.question)
-    expect(json).toContain(result.summary.content)
+    expect(JSON.parse(json).summary.content).toBe(result.summary.content)
   })
 })
 

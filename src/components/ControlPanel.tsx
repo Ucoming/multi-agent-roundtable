@@ -16,6 +16,7 @@ import {
 import type {
   DiscussionSceneId,
   DiscussionMode,
+  DiscussionLanguage,
   FinalOutputType,
   ProviderMode,
   RoundtableConfig,
@@ -44,6 +45,7 @@ const outputOptions = Object.keys(finalOutputLabels) as FinalOutputType[]
 const sceneOptions = Object.keys(sceneLabels) as DiscussionSceneId[]
 const speakingOrders: SpeakingOrder[] = ['fixed', 'random', 'moderator']
 const providerOptions: ProviderMode[] = ['mock', 'deepseek']
+const languageOptions: DiscussionLanguage[] = ['zh', 'en']
 
 export function ControlPanel({
   config,
@@ -79,6 +81,24 @@ export function ControlPanel({
           {providerOptions.map((provider) => (
             <option value={provider} key={provider}>
               {formatProvider(provider)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Discussion language</span>
+        <select
+          aria-label="Discussion language"
+          value={config.discussionLanguage}
+          disabled={isRunning}
+          onChange={(event) =>
+            onConfigChange({ discussionLanguage: event.target.value as DiscussionLanguage })
+          }
+        >
+          {languageOptions.map((language) => (
+            <option value={language} key={language}>
+              {formatLanguage(language)}
             </option>
           ))}
         </select>
@@ -246,6 +266,14 @@ function formatProvider(provider: ProviderMode) {
     deepseek: 'DeepSeek live',
   }
   return labels[provider]
+}
+
+function formatLanguage(language: DiscussionLanguage) {
+  const labels: Record<DiscussionLanguage, string> = {
+    zh: 'Chinese',
+    en: 'English',
+  }
+  return labels[language]
 }
 
 function formatOrder(order: SpeakingOrder) {

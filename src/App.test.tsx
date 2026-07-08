@@ -29,7 +29,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /start discussion/i }))
 
-    expect(await screen.findByText(/contributions were made/i)).toBeInTheDocument()
+    expect(await screen.findByText(/本轮共有/i)).toBeInTheDocument()
     expect(screen.getByText(/spoke last/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /markdown/i })).toBeEnabled()
   })

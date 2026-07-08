@@ -31,6 +31,7 @@ ${state.config.question}
 
 - Template: ${state.config.template}
 - Provider: ${state.config.providerMode}
+- Discussion language: ${state.config.discussionLanguage}
 - Discussion mode: ${state.config.discussionMode}
 - Rounds: ${state.config.roundCount}
 - Speaking order: ${state.config.speakingOrder}

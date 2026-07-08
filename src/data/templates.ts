@@ -449,6 +449,7 @@ export const defaultConfig: RoundtableConfig = {
   question:
     'I feel stuck in an important relationship situation with no obvious right answer. Help me think through what I feel, what I need, and what I might say or do next.',
   providerMode: 'mock',
+  discussionLanguage: 'zh',
   template: 'relationship-reflection',
   roundCount: 2,
   speakingOrder: 'fixed',

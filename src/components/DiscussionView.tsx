@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Bot, Clock3, Coins, MessageSquare, Send, Sparkles } from 'lucide-react'
+import { MarkdownContent } from './MarkdownContent'
 import { RoundtableScene } from './RoundtableScene'
 import type {
   AgentProfile,
@@ -125,7 +126,7 @@ export function DiscussionView({
                   </blockquote>
                 ) : null}
 
-                <p className="message-content">{message.content}</p>
+                <MarkdownContent className="message-content" content={message.content} />
                 <div className="message-cost">
                   <span>{message.tokenEstimate} tokens</span>
                   <span>${message.costEstimate.toFixed(4)}</span>
@@ -142,7 +143,11 @@ export function DiscussionView({
           <h3>Moderator summary</h3>
           {isRunning ? <span className="live-pill">Streaming</span> : null}
         </div>
-        <p>{summary.content || 'The moderator summary will appear after the final round.'}</p>
+        {summary.content ? (
+          <MarkdownContent content={summary.content} />
+        ) : (
+          <p>The moderator summary will appear after the final round.</p>
+        )}
         {summary.tokenEstimate > 0 ? (
           <div className="message-cost">
             <span>{summary.tokenEstimate} tokens</span>

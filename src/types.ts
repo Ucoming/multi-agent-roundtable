@@ -38,6 +38,8 @@ export type DiscussionSceneId = 'cozy-roundtable' | 'strategy-room' | 'future-la
 
 export type ProviderMode = 'mock' | 'deepseek'
 
+export type DiscussionLanguage = 'zh' | 'en'
+
 export interface AgentProfile {
   id: string
   name: string
@@ -54,6 +56,7 @@ export interface AgentProfile {
 export interface RoundtableConfig {
   question: string
   providerMode: ProviderMode
+  discussionLanguage: DiscussionLanguage
   template: RoundtableTemplate
   roundCount: number
   speakingOrder: SpeakingOrder
