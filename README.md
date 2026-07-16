@@ -1,5 +1,7 @@
 # Multi-Agent Roundtable
 
+English | [简体中文](README.zh-CN.md)
+
 Multi-Agent Roundtable is a local-first React and Express app for structured multi-agent discussions, especially for ambiguous relationship, emotional, and interpersonal questions where there may be no single correct answer. A user enters a question, chooses a discussion template, gets 3-5 generated agents, runs a multi-round discussion, receives a moderator summary, and exports the session as Markdown, JSON, or PDF.
 
 The app keeps a mock provider for static demos, and now supports DeepSeek live mode through a local backend. API keys stay in `.env` and are never sent to the browser.
@@ -170,3 +172,4 @@ This project is released under the [MIT License](LICENSE).
 - 2026-07-08: Restyled the central roundtable scene into an isometric pixel-art room with wood floor texture, diamond table, colored chairs, and blocky speech cards.
 - 2026-07-08: Reworked the roundtable visual after Claude Code design review, replacing fixed chairs with per-agent seating, theme-aware scene colors, shorter speech previews, and a cleaner illustrated table composition.
 - 2026-07-16: Completed the public-repository readiness pass with cancellable SSE requests, provider health feedback, model-aware DeepSeek costs, responsive and accessibility polish, CI checks, generated app metadata, and clarified local-only security boundaries.
+- 2026-07-16: Added a complete Simplified Chinese README with bidirectional language navigation on GitHub.
