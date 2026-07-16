@@ -153,6 +153,37 @@ describe('roundtable run', () => {
     expect(result.messages[2].content).toContain(agents[0].name)
     expect(result.messages[2].content).toContain(agents[1].name)
   })
+
+  it('cancels an active provider stream and keeps partial output', async () => {
+    const agents = createAgentsFromTemplate('relationship-reflection').slice(0, 1)
+    const controller = new AbortController()
+    const provider: LlmProvider = {
+      id: 'abortable-provider',
+      label: 'Abortable Provider',
+      streamTurn: async function* (_input, options) {
+        yield 'A useful partial thought.'
+        await new Promise<void>((_resolve, reject) => {
+          options?.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true },
+          )
+        })
+      },
+      streamSummary: async function* () {
+        yield 'This should not run after cancellation.'
+      },
+    }
+
+    const run = runRoundtable(defaultConfig, agents, provider, { signal: controller.signal })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    controller.abort()
+    const result = await run
+
+    expect(result.messages).toHaveLength(1)
+    expect(result.messages[0].content).toBe('A useful partial thought.')
+    expect(result.summary.content).toBe('')
+  })
 })
 
 describe('exports', () => {

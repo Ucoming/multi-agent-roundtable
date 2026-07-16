@@ -189,6 +189,31 @@ describe('App', () => {
     }
   })
 
+  it('shows when the local DeepSeek API and key are ready', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(async () =>
+      Response.json({
+        ok: true,
+        provider: 'deepseek',
+        model: 'deepseek-v4-flash',
+        hasDeepSeekKey: true,
+      }),
+    ) as typeof fetch
+
+    try {
+      render(<App />)
+      fireEvent.change(screen.getByLabelText('Provider mode'), {
+        target: { value: 'deepseek' },
+      })
+
+      expect(
+        await screen.findByText(/All live agents route through deepseek-v4-flash/i),
+      ).toBeInTheDocument()
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
   it('guides the user through needs clarification and applies the summary to the question', async () => {
     render(<App />)
 

@@ -1,9 +1,13 @@
 import {
+  CircleAlert,
+  CircleCheck,
   Download,
   FileDown,
   FileJson,
   FileText,
+  LoaderCircle,
   Play,
+  ServerOff,
   Square,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -28,6 +32,7 @@ interface ControlPanelProps {
   config: RoundtableConfig
   canExport: boolean
   isRunning: boolean
+  providerStatus: ProviderStatus
   onConfigChange(patch: Partial<RoundtableConfig>): void
   onProviderModeChange(providerMode: ProviderMode): void
   onTemplateChange(template: RoundtableTemplate): void
@@ -38,6 +43,11 @@ interface ControlPanelProps {
   onExportPdf(): void
   agentRosterSlot?: ReactNode
   needsGuideSlot?: ReactNode
+}
+
+export interface ProviderStatus {
+  state: 'mock' | 'checking' | 'ready' | 'missing-key' | 'offline'
+  message: string
 }
 
 const templateOptions = Object.keys(templateLabels) as RoundtableTemplate[]
@@ -52,6 +62,7 @@ export function ControlPanel({
   config,
   canExport,
   isRunning,
+  providerStatus,
   onConfigChange,
   onProviderModeChange,
   onTemplateChange,
@@ -123,6 +134,15 @@ export function ControlPanel({
                 ))}
               </select>
             </label>
+          </div>
+
+          <div
+            className={`provider-status provider-status-${providerStatus.state}`}
+            role="status"
+            aria-live="polite"
+          >
+            <ProviderStatusIcon state={providerStatus.state} />
+            <span>{providerStatus.message}</span>
           </div>
 
           <div className="primary-actions">
@@ -309,4 +329,11 @@ function formatOrder(order: SpeakingOrder) {
     moderator: 'Moderator-called',
   }
   return labels[order]
+}
+
+function ProviderStatusIcon({ state }: { state: ProviderStatus['state'] }) {
+  if (state === 'checking') return <LoaderCircle size={15} />
+  if (state === 'ready' || state === 'mock') return <CircleCheck size={15} />
+  if (state === 'offline') return <ServerOff size={15} />
+  return <CircleAlert size={15} />
 }

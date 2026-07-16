@@ -21,6 +21,8 @@ html {
 
 body {
   margin: 0;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -59,6 +61,11 @@ input:disabled,
 textarea:disabled {
   cursor: not-allowed;
   opacity: 0.62;
+}
+
+:where(button, input, select, textarea, summary, a):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #d66f57) 38%, transparent);
+  outline-offset: 2px;
 }
 
 .theme-warm-family {
@@ -1496,6 +1503,9 @@ blockquote span {
 
 .markdown-content table {
   width: 100%;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -1558,21 +1568,27 @@ blockquote span {
 
 .control-panel {
   display: grid;
-  gap: 12px;
+  gap: 0;
 }
 
 .control-panel-body {
   display: grid;
-  gap: 12px;
+  gap: 0;
+  border-top: 1px solid var(--border);
 }
 
 .control-section {
   display: grid;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.control-panel-body > .control-section:first-child {
+  border-top: 0;
 }
 
 .control-section-title h3,
@@ -1598,6 +1614,38 @@ blockquote span {
 .control-section-body {
   display: grid;
   gap: 10px;
+}
+
+.provider-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 36px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.provider-status svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.provider-status-ready,
+.provider-status-mock {
+  color: var(--accent-strong);
+}
+
+.provider-status-missing-key,
+.provider-status-offline {
+  color: #8a3d32;
+  border-color: color-mix(in srgb, #b95545 44%, var(--border));
+  background: color-mix(in srgb, #f7d6cc 54%, var(--surface));
 }
 
 .agent-roster-embed .agent-list {
@@ -1698,8 +1746,8 @@ blockquote span {
   .topbar {
     align-items: stretch;
     flex-direction: column;
-    width: min(360px, calc(100vw - 24px));
-    max-width: min(360px, calc(100vw - 24px));
+    width: 100%;
+    max-width: 100%;
   }
 
   .topbar-actions {
@@ -1723,8 +1771,8 @@ blockquote span {
   }
 
   .workspace {
-    width: min(360px, calc(100vw - 24px));
-    max-width: min(360px, calc(100vw - 24px));
+    width: 100%;
+    max-width: 100%;
     grid-template-columns: 1fr;
   }
 
@@ -1783,6 +1831,22 @@ blockquote span {
     transform: none;
   }
 
+  .scene-seat.is-bottom {
+    flex-direction: column;
+  }
+
+  .scene-seat.is-bottom .speech-bubble {
+    margin: 7px 0 0;
+  }
+
+  .scene-seat.is-bottom .speech-bubble::before {
+    top: -6px;
+    bottom: auto;
+    border: 0;
+    border-left: 1px solid color-mix(in srgb, var(--seat-accent) 42%, var(--border));
+    border-top: 1px solid color-mix(in srgb, var(--seat-accent) 42%, var(--border));
+  }
+
   .scene-agent {
     width: 100%;
   }
@@ -1812,5 +1876,37 @@ blockquote span {
 
   .transcript {
     max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .topbar,
+  .panel,
+  .roundtable-scene,
+  .transcript {
+    padding-inline: 12px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .topbar h1 {
+    font-size: 20px;
+  }
+
+  .metrics-row {
+    padding-inline: 12px;
+  }
+
+  .interjection-box,
+  .summary-card {
+    margin-inline: 12px;
   }
 }

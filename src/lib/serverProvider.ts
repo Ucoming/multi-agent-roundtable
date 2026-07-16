@@ -9,6 +9,13 @@ interface ServerProviderOptions {
   baseUrl?: string
 }
 
+export interface ServerHealth {
+  ok: boolean
+  provider: string
+  model: string
+  hasDeepSeekKey: boolean
+}
+
 interface ServerEvent {
   event: string
   data: unknown
@@ -22,15 +29,45 @@ export function createServerProvider(options: ServerProviderOptions = {}): LlmPr
   return {
     id: 'deepseek-live',
     label: 'DeepSeek Live Provider',
-    streamTurn: (input) => postSse(`${baseUrl}/api/agent-turn`, { provider: 'deepseek', ...input }),
-    streamSummary: (input) =>
-      postSse(`${baseUrl}/api/moderator-summary`, { provider: 'deepseek', ...input }),
-    streamGuidance: (input) =>
-      postSse(`${baseUrl}/api/needs-guide`, { provider: 'deepseek', ...input }),
+    streamTurn: (input, requestOptions) =>
+      postSse(
+        `${baseUrl}/api/agent-turn`,
+        { provider: 'deepseek', ...input },
+        requestOptions?.signal,
+      ),
+    streamSummary: (input, requestOptions) =>
+      postSse(
+        `${baseUrl}/api/moderator-summary`,
+        { provider: 'deepseek', ...input },
+        requestOptions?.signal,
+      ),
+    streamGuidance: (input, requestOptions) =>
+      postSse(
+        `${baseUrl}/api/needs-guide`,
+        { provider: 'deepseek', ...input },
+        requestOptions?.signal,
+      ),
   }
 }
 
-async function* postSse(url: string, body: unknown): AsyncGenerator<ProviderStreamItem> {
+export async function checkServerHealth(
+  options: ServerProviderOptions & { signal?: AbortSignal } = {},
+): Promise<ServerHealth> {
+  const baseUrl = (options.baseUrl ?? defaultApiBaseUrl).replace(/\/$/, '')
+  const response = await fetch(`${baseUrl}/api/health`, {
+    headers: { Accept: 'application/json' },
+    signal: options.signal,
+  })
+
+  if (!response.ok) throw new Error(`Local API returned ${response.status}.`)
+  return (await response.json()) as ServerHealth
+}
+
+async function* postSse(
+  url: string,
+  body: unknown,
+  signal?: AbortSignal,
+): AsyncGenerator<ProviderStreamItem> {
   let response: Response
 
   try {
@@ -41,8 +78,10 @@ async function* postSse(url: string, body: unknown): AsyncGenerator<ProviderStre
         Accept: 'text/event-stream',
       },
       body: JSON.stringify(body),
+      signal,
     })
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) throw error
     throw new Error('Cannot reach the local API at http://127.0.0.1:3001. Run npm run dev:all.')
   }
 
@@ -163,6 +202,8 @@ function readUsage(value: unknown): ProviderUsage | undefined {
     totalTokens,
     promptTokens: readOptionalNumber(value.promptTokens),
     completionTokens: readOptionalNumber(value.completionTokens),
+    promptCacheHitTokens: readOptionalNumber(value.promptCacheHitTokens),
+    promptCacheMissTokens: readOptionalNumber(value.promptCacheMissTokens),
     costEstimate: readOptionalNumber(value.costEstimate),
     model: readStringField(value, 'model'),
     source: readStringField(value, 'source'),
@@ -176,4 +217,8 @@ function readOptionalNumber(value: unknown) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === 'AbortError'
 }

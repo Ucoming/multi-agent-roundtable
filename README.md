@@ -4,6 +4,8 @@ Multi-Agent Roundtable is a local-first React and Express app for structured mul
 
 The app keeps a mock provider for static demos, and now supports DeepSeek live mode through a local backend. API keys stay in `.env` and are never sent to the browser.
 
+![Multi-Agent Roundtable workspace](docs/roundtable-workspace.png)
+
 ## Features
 
 - Three-pane product layout: conversation history on the left, live discussion transcript in the center, and controls on the right.
@@ -14,7 +16,7 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Philosophy agent library with method-inspired lenses such as Contradiction & Practice Lens, Socratic Questioner, Stoic Examiner, Existential Mirror, Daoist Balance Reader, Material Conditions Lens, and Ethics Referee.
 - Optional pre-roundtable needs clarifier that guides the user through 3 short rounds before turning unclear feelings into a roundtable-ready question and context summary.
 - Live user interjections during a running discussion; later agents receive the added context in the shared transcript.
-- ChatGPT-style right-side conversation history with browser-local auto-save, search, restore, delete, and new discussion controls.
+- ChatGPT-style left conversation history with browser-local auto-save, search, restore, delete, and new discussion controls.
 - Safe GFM Markdown rendering for agent messages and moderator summaries, including lists, tables, quotes, inline code, and code blocks.
 - Discussion language control for Chinese or English model output.
 - Whole-table discussion brief for every turn, including common ground, tensions, open questions, and multiple prior reference points.
@@ -24,7 +26,8 @@ The app keeps a mock provider for static demos, and now supports DeepSeek live m
 - Speaking orders: fixed, deterministic random, and moderator-called.
 - Themes: Warm Family, Philosophy Study, Work Mode, and Tech Vision, with generated local PNG assets.
 - Provider modes: Mock demo and DeepSeek live through the local Express API.
-- Token and cost tracking, preferring real provider usage when available.
+- Live provider readiness status before a run starts.
+- Token and cost tracking, preferring real provider usage and V4 model pricing when available.
 - Exports: Markdown, JSON, and client-side PDF.
 - Tests for template generation, speaking order, moderator summary, exports, local session history, running-session switching, and App-level interaction paths.
 
@@ -62,18 +65,34 @@ API_PORT=3001
 
 Mock demo mode works without `.env`. DeepSeek live mode requires the backend and `DEEPSEEK_API_KEY`.
 
+`VITE_API_BASE_URL` defaults to `http://127.0.0.1:3001`. Keep it aligned with `API_PORT` if you change the local API port.
+
 ## Validation
 
 ```bash
-npm run test:run
-npm run build
+npm run check
 ```
 
-`npm run build` regenerates the local PNG assets before compiling the static site.
+`npm run check` runs TypeScript validation, the full test suite, asset generation, and the production build. `npm run build` regenerates the local PNG assets before compiling the static site.
+
+## Project Structure
+
+```text
+src/                    React frontend and browser-side orchestration
+  components/           History, roundtable, controls, agents, and needs guide
+  data/                 Topics, templates, scenes, themes, and agent presets
+  lib/                  Providers, discussion engine, exports, costs, and storage
+server/                 Local Express API, prompt builder, and DeepSeek adapter
+public/assets/          Generated local avatars, theme art, and app icon
+scripts/                Deterministic asset generation
+.github/workflows/      CI plus optional manual GitHub Pages deployment
+```
+
+The browser orchestrates one turn per enabled agent. Mock mode streams locally. DeepSeek live mode sends each turn to the local Express API, which keeps the key server-side and streams provider output back through SSE.
 
 ## GitHub Pages
 
-The repository includes `.github/workflows/pages.yml` for optional static demo publishing. GitHub Pages can run the mock demo only. DeepSeek live mode requires the local Express API or another backend proxy because secrets must not be committed or exposed to browser code.
+The repository includes `.github/workflows/pages.yml` for optional static demo publishing. It is manual-only, so pushing the repository does not deploy the app automatically. GitHub Pages can run the mock demo only. DeepSeek live mode requires the local Express API or another backend proxy because secrets must not be committed or exposed to browser code.
 
 The app uses relative Vite asset paths, so it can run under a repository subpath without committing secrets or runtime configuration.
 
@@ -87,6 +106,10 @@ The frontend uses the `LlmProvider` interface. `createMockProvider` streams dete
 - `stream_options.include_usage: true`
 - `thinking.type: disabled`
 
+The editable per-agent `Model label` is presentation metadata in this release. In DeepSeek live mode, every enabled agent is routed through the backend model selected by `DEEPSEEK_MODEL`; GPT, Claude, Gemini, and Ollama adapters are not implemented yet.
+
+Stop and history-switch actions abort the active browser request. The Express SSE route also cancels its upstream DeepSeek request when the client disconnects. Live cost estimates use the provider's prompt, cache, and completion token counts with model-specific pricing; pricing can still change upstream, so displayed values remain estimates.
+
 The group-chat model is sequential at the API layer: one API call per speaking agent. It is not limited to the previous message. Each later agent receives the visible transcript plus a compact table brief with common ground, tensions, open questions, and several prior reference points. The table brief is treated as a shared compressed map, not a consensus. Each agent also receives an agent-specific attention filter derived from its role, system prompt, and speaking style.
 
 Each live agent prompt now includes a deliberation contract: use Markdown, answer in the selected language, respond to the whole table state, name the prior speakers being addressed, state whether it agrees, disagrees, or partly agrees, and preserve unresolved disagreement when the question has no single correct answer. The moderator synthesis is asked to separate common ground, unresolved tension, multiple plausible outcomes, theory connections, next conversation moves, and safety or boundary notes. Theory connections must explain both fit and limits, and must not be framed as diagnosis or professional treatment advice.
@@ -96,6 +119,14 @@ The same provider boundary powers the pre-roundtable needs guide. Mock mode gene
 ## Relationship Reflection Boundary
 
 The relationship and emotional templates are designed for reflection, perspective-taking, and communication planning. They are not therapy, diagnosis, legal advice, or emergency support. If a transcript suggests self-harm, abuse, coercion, or immediate danger, agents are instructed to prioritize real-world safety and recommend trusted human or emergency support.
+
+## Privacy and Security
+
+- Keep `.env` local. It is ignored by Git; commit only `.env.example`.
+- Never put provider keys in `VITE_` variables because those values are bundled into browser code.
+- Conversation history is stored in the current browser through IndexedDB, with localStorage fallback. There is no account, cloud sync, or backend database.
+- The local API binds to `127.0.0.1` and accepts browser origins from localhost only.
+- Before publishing, run `git grep` or a secret scanner and rotate any key that has been pasted into a public place.
 
 The first preset agent library is inspired by public communication and therapy-adjacent frameworks such as Nonviolent Communication, CBT-style thought-feeling-behavior mapping, relationship conflict management, and attachment-informed emotion work. Presets are method-oriented personas, not impersonations of real experts.
 
@@ -134,3 +165,4 @@ The Philosophy & Thinking topic also uses method-inspired archetypes rather than
 - 2026-07-08: Redesigned the workspace into a cleaner left-history, center-discussion, right-controls layout, with agent editing embedded inside the controls panel.
 - 2026-07-08: Restyled the central roundtable scene into an isometric pixel-art room with wood floor texture, diamond table, colored chairs, and blocky speech cards.
 - 2026-07-08: Reworked the roundtable visual after Claude Code design review, replacing fixed chairs with per-agent seating, theme-aware scene colors, shorter speech previews, and a cleaner illustrated table composition.
+- 2026-07-16: Completed the public-repository readiness pass with cancellable SSE requests, provider health feedback, model-aware DeepSeek costs, responsive and accessibility polish, CI checks, generated app metadata, and clarified local-only security boundaries.

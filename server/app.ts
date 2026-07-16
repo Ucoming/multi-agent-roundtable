@@ -1,5 +1,5 @@
 import cors from 'cors'
-import express, { type Response } from 'express'
+import express, { type Request, type Response } from 'express'
 import type {
   DiscussionBrief,
   GuidanceStage,
@@ -54,7 +54,7 @@ export function createApp(config: ServerConfig) {
       maxTokens: 900,
     })
 
-    await streamProviderResponse(response, config, payload)
+    await streamProviderResponse(request, response, config, payload)
   })
 
   app.post('/api/moderator-summary', async (request, response) => {
@@ -75,7 +75,7 @@ export function createApp(config: ServerConfig) {
       maxTokens: 1100,
     })
 
-    await streamProviderResponse(response, config, payload)
+    await streamProviderResponse(request, response, config, payload)
   })
 
   app.post('/api/needs-guide', async (request, response) => {
@@ -96,13 +96,14 @@ export function createApp(config: ServerConfig) {
       maxTokens: validation.value.stage === 'summary' ? 900 : 420,
     })
 
-    await streamProviderResponse(response, config, payload)
+    await streamProviderResponse(request, response, config, payload)
   })
 
   return app
 }
 
 async function streamProviderResponse(
+  request: Request,
   response: Response,
   config: ServerConfig,
   payload: DeepSeekPayload,
@@ -115,11 +116,19 @@ async function streamProviderResponse(
     return
   }
 
+  const abortController = new AbortController()
+  const abortUpstream = () => {
+    if (!response.writableEnded) abortController.abort()
+  }
+  request.once('aborted', abortUpstream)
+  response.once('close', abortUpstream)
+
   try {
     for await (const event of streamDeepSeekChat({
       apiKey: config.deepseekApiKey,
       baseUrl: config.deepseekBaseUrl,
       payload,
+      signal: abortController.signal,
     })) {
       if (event.type === 'chunk') {
         if (event.text) sendSse(response, 'chunk', { text: event.text })
@@ -132,11 +141,14 @@ async function streamProviderResponse(
 
     sendSse(response, 'done', { ok: true })
   } catch (error) {
+    if (abortController.signal.aborted || response.destroyed) return
     sendSse(response, 'error', {
       error: error instanceof Error ? error.message : 'DeepSeek request failed.',
     })
   } finally {
-    response.end()
+    request.off('aborted', abortUpstream)
+    response.off('close', abortUpstream)
+    if (!response.writableEnded && !response.destroyed) response.end()
   }
 }
 

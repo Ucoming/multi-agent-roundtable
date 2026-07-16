@@ -28,15 +28,28 @@ export interface DeepSeekStreamOptions {
   baseUrl: string
   payload: DeepSeekPayload
   fetchImpl?: typeof fetch
+  signal?: AbortSignal
 }
 
 interface DeepSeekUsage {
   prompt_tokens?: number
   completion_tokens?: number
+  prompt_cache_hit_tokens?: number
+  prompt_cache_miss_tokens?: number
   total_tokens?: number
 }
 
-const deepSeekCostPerThousandTokens = 0.004
+interface DeepSeekPricing {
+  inputCacheHit: number
+  inputCacheMiss: number
+  output: number
+}
+
+// USD per 1M tokens. Unknown model IDs use the conservative V4 Pro rates.
+const deepSeekPricing: Record<'flash' | 'pro', DeepSeekPricing> = {
+  flash: { inputCacheHit: 0.0028, inputCacheMiss: 0.14, output: 0.28 },
+  pro: { inputCacheHit: 0.003625, inputCacheMiss: 0.435, output: 0.87 },
+}
 
 export function buildDeepSeekPayload({
   prompt,
@@ -72,6 +85,7 @@ export async function* streamDeepSeekChat({
   baseUrl,
   payload,
   fetchImpl = fetch,
+  signal,
 }: DeepSeekStreamOptions): AsyncGenerator<DeepSeekParsedEvent> {
   const response = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
@@ -81,6 +95,7 @@ export async function* streamDeepSeekChat({
       Accept: 'text/event-stream',
     },
     body: JSON.stringify(payload),
+    signal,
   })
 
   if (!response.ok) {
@@ -174,6 +189,8 @@ function normalizeDeepSeekUsage(value: unknown, model: string): ProviderUsage | 
 
   const promptTokens = readNumber(usage.prompt_tokens)
   const completionTokens = readNumber(usage.completion_tokens)
+  const promptCacheHitTokens = readNumber(usage.prompt_cache_hit_tokens)
+  const promptCacheMissTokens = readNumber(usage.prompt_cache_miss_tokens)
   const totalTokens = readNumber(usage.total_tokens) ?? (promptTokens ?? 0) + (completionTokens ?? 0)
 
   if (!totalTokens) return undefined
@@ -181,11 +198,44 @@ function normalizeDeepSeekUsage(value: unknown, model: string): ProviderUsage | 
   return {
     promptTokens,
     completionTokens,
+    promptCacheHitTokens,
+    promptCacheMissTokens,
     totalTokens,
-    costEstimate: Number(((totalTokens / 1000) * deepSeekCostPerThousandTokens).toFixed(4)),
+    costEstimate: estimateDeepSeekCost({
+      model,
+      promptTokens,
+      completionTokens,
+      promptCacheHitTokens,
+      promptCacheMissTokens,
+    }),
     model,
     source: 'deepseek',
   }
+}
+
+export function estimateDeepSeekCost({
+  model,
+  promptTokens = 0,
+  completionTokens = 0,
+  promptCacheHitTokens = 0,
+  promptCacheMissTokens = 0,
+}: {
+  model: string
+  promptTokens?: number
+  completionTokens?: number
+  promptCacheHitTokens?: number
+  promptCacheMissTokens?: number
+}) {
+  const pricing = model.includes('flash') ? deepSeekPricing.flash : deepSeekPricing.pro
+  const classifiedPromptTokens = promptCacheHitTokens + promptCacheMissTokens
+  const uncategorizedPromptTokens = Math.max(0, promptTokens - classifiedPromptTokens)
+  const cost =
+    (promptCacheHitTokens * pricing.inputCacheHit +
+      (promptCacheMissTokens + uncategorizedPromptTokens) * pricing.inputCacheMiss +
+      completionTokens * pricing.output) /
+    1_000_000
+
+  return Number(cost.toFixed(6))
 }
 
 function readNumber(value: unknown) {

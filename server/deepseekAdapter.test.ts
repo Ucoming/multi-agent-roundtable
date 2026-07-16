@@ -2,6 +2,7 @@
 import {
   buildDeepSeekPayload,
   drainDeepSeekSseBuffer,
+  estimateDeepSeekCost,
   parseDeepSeekData,
 } from './deepseekAdapter'
 
@@ -58,6 +59,18 @@ describe('DeepSeek adapter', () => {
         source: 'deepseek',
       },
     })
+  })
+
+  it('prices V4 input, cache, and output tokens separately', () => {
+    const cost = estimateDeepSeekCost({
+      model: 'deepseek-v4-flash',
+      promptTokens: 1000,
+      promptCacheHitTokens: 400,
+      promptCacheMissTokens: 600,
+      completionTokens: 500,
+    })
+
+    expect(cost).toBe(0.000225)
   })
 
   it('drains completed SSE frames and preserves the partial frame', () => {

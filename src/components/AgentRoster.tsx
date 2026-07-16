@@ -165,7 +165,7 @@ export function AgentRoster({
 
             <div className="agent-grid">
               <label className="field">
-                <span>Model</span>
+                <span>Model label</span>
                 <select
                   value={agent.model}
                   disabled={disabled}

@@ -5,7 +5,7 @@ import {
   ConversationHistorySidebar,
   type SessionSaveState,
 } from './components/ConversationHistorySidebar'
-import { ControlPanel } from './components/ControlPanel'
+import { ControlPanel, type ProviderStatus } from './components/ControlPanel'
 import { DiscussionView } from './components/DiscussionView'
 import { NeedsGuidePanel } from './components/NeedsGuidePanel'
 import { getTopicDefinition, topicCatalog } from './data/topicCatalog'
@@ -20,7 +20,7 @@ import { downloadJson, downloadMarkdown, downloadPdf } from './lib/exports'
 import { estimateTokens, summarizeCosts } from './lib/costs'
 import { runRoundtable } from './lib/discussionEngine'
 import { createMockProvider } from './lib/mockProvider'
-import { createServerProvider } from './lib/serverProvider'
+import { checkServerHealth, createServerProvider } from './lib/serverProvider'
 import {
   deleteSession,
   getSession,
@@ -70,7 +70,12 @@ export function App() {
   const [currentSession, setCurrentSession] = useState<RoundtableSessionMeta>()
   const [autosaveEnabled, setAutosaveEnabled] = useState(false)
   const [saveState, setSaveState] = useState<SessionSaveState>('idle')
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
+    state: 'mock',
+    message: 'Deterministic local demo. No API calls or keys required.',
+  })
   const stopRef = useRef(false)
+  const runAbortControllerRef = useRef<AbortController | undefined>(undefined)
   const interjectionQueueRef = useRef<RoundtableExportState['messages']>([])
   const pendingSessionSwitchRef = useRef<string | undefined>(undefined)
   const saveTimerRef = useRef<number | undefined>(undefined)
@@ -106,6 +111,43 @@ export function App() {
   useEffect(() => {
     void refreshSessions()
   }, [refreshSessions])
+
+  useEffect(() => {
+    if (config.providerMode === 'mock') {
+      setProviderStatus({
+        state: 'mock',
+        message: 'Deterministic local demo. No API calls or keys required.',
+      })
+      return
+    }
+
+    const controller = new AbortController()
+    setProviderStatus({ state: 'checking', message: 'Checking the local DeepSeek API...' })
+
+    void checkServerHealth({ signal: controller.signal })
+      .then((health) => {
+        setProviderStatus(
+          health.hasDeepSeekKey
+            ? {
+                state: 'ready',
+                message: `Local API ready. All live agents route through ${health.model}.`,
+              }
+            : {
+                state: 'missing-key',
+                message: 'Local API found, but DEEPSEEK_API_KEY is missing.',
+              },
+        )
+      })
+      .catch((healthError) => {
+        if (healthError instanceof Error && healthError.name === 'AbortError') return
+        setProviderStatus({
+          state: 'offline',
+          message: 'Local API is offline. Run npm run dev:all.',
+        })
+      })
+
+    return () => controller.abort()
+  }, [config.providerMode])
 
   useEffect(() => {
     if (!currentSession) {
@@ -164,6 +206,7 @@ export function App() {
 
   function updateConfig(patch: Partial<RoundtableConfig>) {
     setConfig((current) => ({ ...current, ...patch }))
+    setError('')
   }
 
   function updateTemplate(template: RoundtableTemplate) {
@@ -256,6 +299,8 @@ export function App() {
     setSaveState('saving')
     setIsRunning(true)
     stopRef.current = false
+    const runAbortController = new AbortController()
+    runAbortControllerRef.current = runAbortController
     interjectionQueueRef.current = []
 
     let finalStatus: SessionStatus = 'completed'
@@ -266,31 +311,47 @@ export function App() {
     try {
       const result = await runRoundtable(runConfig, runAgents, provider, {
         onMessageStart: (message) => {
+          finalMessages = [...finalMessages, message]
           setMessages((current) => [...current, message])
         },
         onMessageChunk: (message) => {
+          finalMessages = finalMessages.map((existing) =>
+            existing.id === message.id ? message : existing,
+          )
           setMessages((current) =>
             current.map((existing) => (existing.id === message.id ? message : existing)),
           )
         },
         onMessageComplete: (message) => {
+          finalMessages = finalMessages.map((existing) =>
+            existing.id === message.id ? message : existing,
+          )
           setMessages((current) =>
             current.map((existing) => (existing.id === message.id ? message : existing)),
           )
         },
         onSummaryStart: (nextSummary) => {
+          finalSummary = nextSummary
           setSummary(nextSummary)
         },
         onSummaryChunk: (nextSummary) => {
+          finalSummary = nextSummary
           setSummary(nextSummary)
         },
         onSummaryComplete: (nextSummary) => {
+          finalSummary = nextSummary
           setSummary(nextSummary)
         },
         shouldStop: () => stopRef.current,
+        signal: runAbortController.signal,
         consumeUserInterjections: () => {
           const queued = interjectionQueueRef.current
           interjectionQueueRef.current = []
+          const knownIds = new Set(finalMessages.map((message) => message.id))
+          finalMessages = [
+            ...finalMessages,
+            ...queued.filter((message) => !knownIds.has(message.id)),
+          ]
           return queued
         },
       })
@@ -301,9 +362,13 @@ export function App() {
       finalSummary = result.summary
       finalStatus = stopRef.current ? 'stopped' : 'completed'
     } catch (runError) {
-      finalStatus = 'error'
-      finalError = runError instanceof Error ? runError.message : 'The roundtable failed to run.'
-      setError(finalError)
+      if (stopRef.current || runAbortController.signal.aborted) {
+        finalStatus = 'stopped'
+      } else {
+        finalStatus = 'error'
+        finalError = runError instanceof Error ? runError.message : 'The roundtable failed to run.'
+        setError(finalError)
+      }
     } finally {
       const completedSession = {
         ...session,
@@ -312,6 +377,9 @@ export function App() {
       }
       setCurrentSession((current) => (current?.id === session.id ? completedSession : current))
       setIsRunning(false)
+      if (runAbortControllerRef.current === runAbortController) {
+        runAbortControllerRef.current = undefined
+      }
 
       const pendingSessionId = pendingSessionSwitchRef.current
       if (pendingSessionId) {
@@ -335,6 +403,7 @@ export function App() {
 
   function stopDiscussion() {
     stopRef.current = true
+    runAbortControllerRef.current?.abort()
   }
 
   function addUserInterjection(content: string) {
@@ -350,6 +419,7 @@ export function App() {
     if (isRunning) {
       pendingSessionSwitchRef.current = sessionId
       stopRef.current = true
+      runAbortControllerRef.current?.abort()
       setSaveState('saving')
       return
     }
@@ -474,6 +544,7 @@ export function App() {
           config={config}
           canExport={messages.length > 0 || Boolean(summary.content)}
           isRunning={isRunning}
+          providerStatus={providerStatus}
           onConfigChange={updateConfig}
           onProviderModeChange={updateProviderMode}
           onTemplateChange={updateTemplate}

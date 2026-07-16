@@ -41,7 +41,7 @@ export function RoundtableScene({
           <h2>{scene.label}</h2>
           <p>{scene.description}</p>
         </div>
-        <div className="active-speaker-chip">
+        <div className="active-speaker-chip" role="status" aria-live="polite">
           <Radio size={15} />
           <span>{latestMessage ? speakerStatus(latestMessage.speakerName, isRunning) : 'Waiting'}</span>
         </div>

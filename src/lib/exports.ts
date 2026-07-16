@@ -1,4 +1,5 @@
 import type { RoundtableExportState } from '../types'
+import { formatCost } from './costs'
 
 export function createMarkdownExport(state: RoundtableExportState) {
   const enabledAgents = state.agents.filter((agent) => agent.enabled)
@@ -25,7 +26,7 @@ export function createMarkdownExport(state: RoundtableExportState) {
             .join(' | ')}\n`
         : ''
       const label = message.speakerType === 'user' ? 'User input' : `Round ${message.round}`
-      return `### ${label}: ${message.speakerName}\n${referenceLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${message.costEstimate.toFixed(4)}`
+      return `### ${label}: ${message.speakerName}\n${referenceLine}\n${message.content}\n\nTokens: ${message.tokenEstimate} | Cost: $${formatCost(message.costEstimate)}`
     })
     .join('\n\n')
 
@@ -71,7 +72,7 @@ ${state.summary.content || 'No moderator summary generated yet.'}
 ## Cost Summary
 
 - Total tokens: ${state.costSummary.totalTokens}
-- Estimated cost: $${state.costSummary.totalCost.toFixed(4)}
+- Estimated cost: $${formatCost(state.costSummary.totalCost)}
 `
 }
 
@@ -119,7 +120,7 @@ export async function downloadPdf(state: RoundtableExportState) {
   write(
     `Configuration: ${state.config.template}, ${state.config.roundCount} rounds, ${state.config.speakingOrder} order, ${state.config.finalOutputType} output.`,
   )
-  write(`Cost: ${state.costSummary.totalTokens} tokens, $${state.costSummary.totalCost.toFixed(4)} estimated.`)
+  write(`Cost: ${state.costSummary.totalTokens} tokens, $${formatCost(state.costSummary.totalCost)} estimated.`)
   write('Moderator Summary', 14, 18)
   write(state.summary.content || 'No moderator summary generated yet.')
   write('Transcript', 14, 18)

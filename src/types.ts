@@ -125,10 +125,16 @@ export interface DiscussionBrief {
 export interface ProviderUsage {
   promptTokens?: number
   completionTokens?: number
+  promptCacheHitTokens?: number
+  promptCacheMissTokens?: number
   totalTokens: number
   costEstimate?: number
   model?: string
   source?: string
+}
+
+export interface ProviderRequestOptions {
+  signal?: AbortSignal
 }
 
 export type ProviderStreamEvent =
@@ -173,9 +179,18 @@ export interface NeedsGuideInput {
 export interface LlmProvider {
   id: string
   label: string
-  streamTurn(input: ProviderTurnInput): AsyncGenerator<ProviderStreamItem>
-  streamSummary?(input: ProviderSummaryInput): AsyncGenerator<ProviderStreamItem>
-  streamGuidance?(input: NeedsGuideInput): AsyncGenerator<ProviderStreamItem>
+  streamTurn(
+    input: ProviderTurnInput,
+    options?: ProviderRequestOptions,
+  ): AsyncGenerator<ProviderStreamItem>
+  streamSummary?(
+    input: ProviderSummaryInput,
+    options?: ProviderRequestOptions,
+  ): AsyncGenerator<ProviderStreamItem>
+  streamGuidance?(
+    input: NeedsGuideInput,
+    options?: ProviderRequestOptions,
+  ): AsyncGenerator<ProviderStreamItem>
 }
 
 export interface RoundtableRunResult {

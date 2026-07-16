@@ -21,6 +21,7 @@ export interface RoundtableRunCallbacks {
   onSummaryComplete?(summary: ModeratorSummary): void
   shouldStop?(): boolean
   consumeUserInterjections?(): DiscussionMessage[]
+  signal?: AbortSignal
 }
 
 export function getEnabledAgents(agents: AgentProfile[]) {
@@ -99,7 +100,7 @@ export async function runRoundtable(
     for (const [turnIndex, agent] of roundPlan.agents.entries()) {
       appendUserInterjections(messages, callbacks)
 
-      if (callbacks.shouldStop?.()) {
+      if (shouldStop(callbacks)) {
         const partialSummary = createEmptySummary()
         return {
           messages,
@@ -133,29 +134,45 @@ export async function runRoundtable(
 
       let usage: ProviderUsage | undefined
 
-      for await (const item of provider.streamTurn({
-        agent,
-        config,
-        round: roundPlan.round,
-        turnIndex,
-        activeAgents,
-        previousMessages: messages,
-        discussionBrief,
-      })) {
-        if (callbacks.shouldStop?.()) break
+      try {
+        for await (const item of provider.streamTurn(
+          {
+            agent,
+            config,
+            round: roundPlan.round,
+            turnIndex,
+            activeAgents,
+            previousMessages: messages,
+            discussionBrief,
+          },
+          { signal: callbacks.signal },
+        )) {
+          if (shouldStop(callbacks)) break
 
-        const event = normalizeProviderItem(item)
-        if (event.type === 'usage') {
-          usage = event.usage
-          continue
-        }
-        if (event.type === 'done') {
-          usage = event.usage ?? usage
-          continue
-        }
+          const event = normalizeProviderItem(item)
+          if (event.type === 'usage') {
+            usage = event.usage
+            continue
+          }
+          if (event.type === 'done') {
+            usage = event.usage ?? usage
+            continue
+          }
 
-        draft = { ...draft, content: draft.content + event.text }
-        callbacks.onMessageChunk?.(draft, event.text)
+          draft = { ...draft, content: draft.content + event.text }
+          callbacks.onMessageChunk?.(draft, event.text)
+        }
+      } catch (error) {
+        if (!isAbortError(error, callbacks)) throw error
+      }
+
+      if (shouldStop(callbacks) && !draft.content.trim()) {
+        const partialSummary = createEmptySummary()
+        return {
+          messages,
+          summary: partialSummary,
+          costSummary: summarizeCosts(messages, partialSummary),
+        }
       }
 
       const tokenEstimate = usage?.totalTokens ?? estimateTokens(draft.content)
@@ -167,7 +184,7 @@ export async function runRoundtable(
       messages.push(completeMessage)
       callbacks.onMessageComplete?.(completeMessage)
 
-      if (callbacks.shouldStop?.()) {
+      if (shouldStop(callbacks)) {
         const partialSummary = createEmptySummary()
         return {
           messages,
@@ -198,31 +215,38 @@ async function streamSummary(
   callbacks.onSummaryStart?.(summary)
 
   const stream =
-    provider.streamSummary?.({
-      config,
-      activeAgents,
-      messages,
-      discussionBrief: createDiscussionBrief(messages, config),
-    }) ??
+    provider.streamSummary?.(
+      {
+        config,
+        activeAgents,
+        messages,
+        discussionBrief: createDiscussionBrief(messages, config),
+      },
+      { signal: callbacks.signal },
+    ) ??
     fallbackSummaryStream(config, activeAgents, messages)
 
   let usage: ProviderUsage | undefined
 
-  for await (const item of stream) {
-    if (callbacks.shouldStop?.()) break
+  try {
+    for await (const item of stream) {
+      if (shouldStop(callbacks)) break
 
-    const event = normalizeProviderItem(item)
-    if (event.type === 'usage') {
-      usage = event.usage
-      continue
-    }
-    if (event.type === 'done') {
-      usage = event.usage ?? usage
-      continue
-    }
+      const event = normalizeProviderItem(item)
+      if (event.type === 'usage') {
+        usage = event.usage
+        continue
+      }
+      if (event.type === 'done') {
+        usage = event.usage ?? usage
+        continue
+      }
 
-    summary = { ...summary, content: summary.content + event.text }
-    callbacks.onSummaryChunk?.(summary, event.text)
+      summary = { ...summary, content: summary.content + event.text }
+      callbacks.onSummaryChunk?.(summary, event.text)
+    }
+  } catch (error) {
+    if (!isAbortError(error, callbacks)) throw error
   }
 
   const tokenEstimate = usage?.totalTokens ?? estimateTokens(summary.content)
@@ -255,6 +279,14 @@ async function* fallbackSummaryStream(
 
 function normalizeProviderItem(item: ProviderStreamItem) {
   return typeof item === 'string' ? { type: 'chunk' as const, text: item } : item
+}
+
+function shouldStop(callbacks: RoundtableRunCallbacks) {
+  return callbacks.signal?.aborted || callbacks.shouldStop?.() || false
+}
+
+function isAbortError(error: unknown, callbacks: RoundtableRunCallbacks) {
+  return shouldStop(callbacks) || (error instanceof Error && error.name === 'AbortError')
 }
 
 function selectReferencePoints(messages: DiscussionMessage[], currentAgentId: string) {

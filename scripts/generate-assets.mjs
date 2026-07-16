@@ -77,6 +77,7 @@ writePng('theme-warm-family.png', drawThemePreview(themes.warm, 'warm'))
 writePng('theme-work-mode.png', drawThemePreview(themes.work, 'work'))
 writePng('theme-tech-vision.png', drawThemePreview(themes.tech, 'tech'))
 writePng('theme-philosophy-study.png', drawThemePreview(themes.philosophy, 'philosophy'))
+writePng('app-icon.png', drawAppIcon(themes.warm))
 
 for (const [themeName, theme] of Object.entries(themes)) {
   for (const [index, name] of avatarNames.entries()) {
@@ -135,6 +136,17 @@ function drawThemePreview(theme, variant) {
     drawCircle(png, 760, 98, 18, withAlpha(theme.accent, 150))
   }
 
+  return png
+}
+
+function drawAppIcon(theme) {
+  const png = createPng(128, 128, theme.bg)
+  drawRoundedRect(png, 8, 8, 112, 112, 24, theme.accent)
+  drawLine(png, 64, 31, 64, 97, '#ffffff', 4)
+  drawLine(png, 31, 64, 97, 64, '#ffffff', 4)
+  drawCircle(png, 64, 64, 13, theme.accent)
+  drawCircle(png, 64, 64, 8, '#ffffff')
+  drawCircle(png, 94, 34, 6, '#ffffff')
   return png
 }
 

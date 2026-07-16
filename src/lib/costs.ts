@@ -16,7 +16,12 @@ export function estimateTokens(text: string) {
 }
 
 export function estimateCost(model: ModelLabel, tokens: number) {
-  return Number(((tokens / 1000) * costPerThousandTokens[model]).toFixed(4))
+  return Number(((tokens / 1000) * costPerThousandTokens[model]).toFixed(6))
+}
+
+export function formatCost(cost: number) {
+  if (cost === 0) return '0.0000'
+  return cost < 0.01 ? cost.toFixed(6) : cost.toFixed(4)
 }
 
 export function summarizeCosts(
@@ -30,6 +35,6 @@ export function summarizeCosts(
 
   return {
     totalTokens: messageTokens + summaryTokens,
-    totalCost: Number((messageCost + summaryCost).toFixed(4)),
+    totalCost: Number((messageCost + summaryCost).toFixed(6)),
   }
 }

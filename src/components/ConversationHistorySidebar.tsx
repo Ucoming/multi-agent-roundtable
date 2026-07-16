@@ -1,4 +1,13 @@
-import { CheckCircle2, Clock3, History, Plus, Search, Trash2 } from 'lucide-react'
+import {
+  CheckCircle2,
+  CircleAlert,
+  CircleDashed,
+  Clock3,
+  History,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { SessionListItem, SessionStatus } from '../types'
 
@@ -51,8 +60,12 @@ export function ConversationHistorySidebar({
         </button>
       </div>
 
-      <div className={`save-state save-state-${saveState}`}>
-        {saveState === 'saving' ? <Clock3 size={14} /> : <CheckCircle2 size={14} />}
+      <div
+        className={`save-state save-state-${saveState}`}
+        role="status"
+        aria-live="polite"
+      >
+        <SaveStateIcon state={saveState} />
         <span>{formatSaveState(saveState, isRunning)}</span>
       </div>
 
@@ -158,6 +171,13 @@ function formatSaveState(saveState: SessionSaveState, isRunning: boolean) {
     error: 'Save failed',
   }
   return labels[saveState]
+}
+
+function SaveStateIcon({ state }: { state: SessionSaveState }) {
+  if (state === 'saving') return <Clock3 size={14} />
+  if (state === 'saved') return <CheckCircle2 size={14} />
+  if (state === 'error') return <CircleAlert size={14} />
+  return <CircleDashed size={14} />
 }
 
 function formatStatus(status: SessionStatus) {

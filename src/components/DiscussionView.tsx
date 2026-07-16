@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bot, Clock3, Coins, MessageSquare, Send, Sparkles } from 'lucide-react'
 import { MarkdownContent } from './MarkdownContent'
 import { RoundtableScene } from './RoundtableScene'
+import { formatCost } from '../lib/costs'
 import type {
   AgentProfile,
   CostSummary,
@@ -32,9 +33,17 @@ export function DiscussionView({
   summary,
 }: DiscussionViewProps) {
   const [interjection, setInterjection] = useState('')
+  const transcriptRef = useRef<HTMLDivElement>(null)
+  const followLatestRef = useRef(true)
   const agentMap = new Map(agents.map((agent) => [agent.id, agent]))
   const messageMap = new Map(messages.map((message) => [message.id, message]))
   const canSubmitInterjection = isRunning && interjection.trim().length > 0
+
+  useEffect(() => {
+    const transcript = transcriptRef.current
+    if (!transcript || !followLatestRef.current) return
+    transcript.scrollTo?.({ top: transcript.scrollHeight, behavior: 'smooth' })
+  }, [messages])
 
   function submitInterjection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -45,7 +54,11 @@ export function DiscussionView({
   }
 
   return (
-    <section className="discussion-panel" aria-label="Discussion transcript">
+    <section
+      className="discussion-panel"
+      aria-label="Discussion transcript"
+      aria-busy={isRunning}
+    >
       <RoundtableScene agents={agents} config={config} isRunning={isRunning} messages={messages} />
 
       <div className="metrics-row">
@@ -54,11 +67,15 @@ export function DiscussionView({
         <Metric
           icon={<Coins size={16} />}
           label="Cost"
-          value={`$${costSummary.totalCost.toFixed(4)}`}
+          value={`$${formatCost(costSummary.totalCost)}`}
         />
       </div>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {error ? (
+        <div className="error-banner" role="alert">
+          {error}
+        </div>
+      ) : null}
 
       <form className="interjection-box" onSubmit={submitInterjection}>
         <label className="field">
@@ -81,7 +98,15 @@ export function DiscussionView({
         </button>
       </form>
 
-      <div className="transcript">
+      <div
+        className="transcript"
+        ref={transcriptRef}
+        onScroll={(event) => {
+          const element = event.currentTarget
+          followLatestRef.current =
+            element.scrollHeight - element.scrollTop - element.clientHeight < 120
+        }}
+      >
         {messages.length === 0 ? (
           <div className="empty-state">
             <MessageSquare size={28} />
@@ -139,7 +164,7 @@ export function DiscussionView({
                 <MarkdownContent className="message-content" content={message.content} />
                 <div className="message-cost">
                   <span>{message.tokenEstimate} tokens</span>
-                  <span>${message.costEstimate.toFixed(4)}</span>
+                  <span>${formatCost(message.costEstimate)}</span>
                 </div>
               </article>
             )
@@ -161,7 +186,7 @@ export function DiscussionView({
         {summary.tokenEstimate > 0 ? (
           <div className="message-cost">
             <span>{summary.tokenEstimate} tokens</span>
-            <span>${summary.costEstimate.toFixed(4)}</span>
+            <span>${formatCost(summary.costEstimate)}</span>
           </div>
         ) : null}
       </article>
