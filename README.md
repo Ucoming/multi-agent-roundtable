@@ -147,6 +147,10 @@ The Philosophy & Thinking topic also uses method-inspired archetypes rather than
 - `Socratic Questioner`, `Stoic Examiner`, `Existential Mirror`, `Daoist Balance Reader`, `Pragmatist Experimentalist`, `Marxian Material Conditions Lens`, and `Ethics Referee` provide contrasting lenses for definitions, control, freedom, non-forcing, experiments, material constraints, and moral tradeoffs.
 - These agents are not written as the historical philosophers themselves, and philosophy mode explicitly avoids propaganda, hagiography, and one-school certainty.
 
+## License
+
+This project is released under the [MIT License](LICENSE).
+
 ## Completion Log
 
 - 2026-07-07: Implemented the initial GitHub Pages-ready Multi-Agent Roundtable app with mock streaming, editable agents, three themes, local PNG assets, Markdown/JSON/PDF export, tests, and deployment workflow.
